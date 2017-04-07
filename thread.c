@@ -1,13 +1,24 @@
 #include "thread.h"
+#include "queue.h"
+#include <ucontext.h>
 
 struct thread{
   thread_t id;
   ucontext_t context;
 };
 
-thread_t thread_self(void){}
+SIMPLEQ_HEAD(queue, thread);
+struct queue head;
+SIMPLEQ_INIT(head);
 
-int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg){}
+
+thread_t thread_self(void){
+  
+}
+
+int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg){
+  
+}
 
 int thread_yield(void){}
 
