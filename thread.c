@@ -1,4 +1,5 @@
 #include "thread.h"
+#include <ucontext.h>
 
 struct thread{
   thread_t id;
