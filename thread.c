@@ -1,51 +1,71 @@
 #include "thread.h"
 #include "queue.h"
 #include <ucontext.h>
-
+#include <stdlib.h>
+#include <stdio.h>
 typedef void* ret;
 SIMPLEQ_HEAD(queue, thread);
 struct queue head;
+
 struct thread {
-  SIMPLEQ_ENTRY(thread_t) id;
-  SIMPLEQ_ENTRY(ucontext_t) context;
-  SIMPLEQ_ENTRY(ret) retval;
+  thread_t id;
+  ucontext_t context;
+  ret retval;
+  SIMPLEQ_ENTRY(thread) next;
 } *t1, *t2;
 
 
-struct thread current_thread ;
+
+/* struct thread {
+  thread_t id;
+  ucontext_t context;
+ ret retval;
+ } *t1, *t2;*/
+struct thread* current_thread ;
 
 thread_t thread_self(void){
-  return current_thread.id;
+  return current_thread->id;
 }
 
 int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg){
   ucontext_t ctx;
-  struct thread th;	
-  getcontext(&ctx);
-  ctx.uc_stack.ss_size = 64*1024;
-  ctx.uc_stack.ss_sp = malloc(ctx.uc_stack.ss_size);
-  ctx.uc_link = NULL;
-  makecontext(&ctx, (void (*)(void)) func ,1,  *funcarg);
+  struct thread *th;
+  if (newthread == NULL){
+    fprintf(stderr, "newthread not initialized\n");
+    return -1;
+  }
   
-  th.id=*newthread;
-  th.context=ctx;
-  th.retval=0;
-  SIMPLEQ_INSERT_TAIL(head, th, field???);
+  if ((th = malloc (sizeof(struct thread))) == NULL){
+    fprintf(stderr, "Error Malloc\n");
+    return -1;
+  }
+    //  getcontext(&ctx);
+  ctx.uc_stack.ss_size = 64*1024;
+  if ((ctx.uc_stack.ss_sp = malloc(ctx.uc_stack.ss_size)) == NULL){
+    fprintf(stderr, "Error Malloc\n");
+    return -1;
+  }
+  ctx.uc_link = NULL;
+  makecontext(&ctx, (void (*)(void)) func ,1, funcarg);
+  
+  th->id=newthread;
+  th->context=ctx;
+  th->retval=0;
+  SIMPLEQ_INSERT_TAIL(&head, th, next);
+  return 0;
 }
 
 int thread_yield(void){
   
-  if ( SIMPLEQ_EMPTY(head) == NULL ) return;
-  SIMPLEQ_INSERT_TAIL(head, current_thread, field???);
-  /* Free the current_thread's stack */
-  free( current_thread.context.uc_stack.ss_sp);
-  current_thread=SIMPLEQ_FIRST(head);
-  SIMPLEQ_REMOVE_HEAD(head, field??);
+  if ( SIMPLEQ_EMPTY(&head) ) return;
+  SIMPLEQ_INSERT_TAIL(&head, current_thread, next);
+  current_thread=SIMPLEQ_FIRST(&head);
+  SIMPLEQ_REMOVE_HEAD(&head, next);
     
 }
 
 /* Permet de placer la valeur de retour du thread spécifié à l'adresse retval */
-
+/*
 int thread_join(thread_t thread, void **retval){
   thread loop;
   thread_t tmp=NULL;
@@ -65,7 +85,7 @@ int thread_join(thread_t thread, void **retval){
   }
 
   /* trouver un moyen d'attendre que thread ait fini */
-  
+/*
   if(retval == NULL){// si retval est NULL, ne rien faire, sinon ..
     return 1;
   }
@@ -73,7 +93,8 @@ int thread_join(thread_t thread, void **retval){
     *retval=tmp.retval; //..on place la valeur de retour du thread dans retval
   }
 }
-
+*/
 /* simplement placer retval dans le retval du thread self */
-
+/*
 void thread_exit(void *retval){}
+*/
