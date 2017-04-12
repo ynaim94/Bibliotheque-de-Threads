@@ -45,5 +45,45 @@ struct queue* head;
 
 int main(int argc, char * argv[]){
   SIMPLEQ_INIT(head);
-  return 0;
+  return EXIT_SUCCESS;
+}
+
+
+
+
+typedef struct thread_mutex { int lock; int locker} thread_mutex_t; // ajout locker
+#define LOCKED 1
+#define UNLOCKED 0
+
+int thread_mutex_init(thread_mutex_t *mutex){
+  mutex->lock = UNLOCKED;
+  mutex->locker = 0;
+  return EXIT_SUCCESS;
+}
+
+int thread_mutex_destroy(thread_mutex_t *mutex){
+  free(mutex);
+  return EXIT_SUCCESS;
+}
+
+int thread_mutex_lock(thread_mutex_t *mutex){
+  thread_t id thread_self();
+  if (mutex->lock == LOCKED) {
+    return EXIT_FAILURE
+  }
+  mutex->lock = LOCKED;
+  mutex->locker = id;
+  return EXIT_SUCCESS;
+}
+
+int thread_mutex_unlock(thread_mutex_t *mutex){
+  thread_t id thread_self();
+  if (mutex->lock == UNLOCKED) {
+    return EXIT_FAILURE;
+  }
+  if (mutex->locker != id){
+    return EXIT_FAILURE;
+  }
+  mutex->lock = UNLOCKED;
+  return EXIT_SUCCESS;
 }
