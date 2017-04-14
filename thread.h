@@ -2,13 +2,23 @@
 #define __THREAD_H__
 
 #ifndef USE_PTHREAD
-
+#include "queue.h"
+#include <ucontext.h>
 /* identifiant de thread
  * NB: pourra être un entier au lieu d'un pointeur si ca vous arrange,
  *     mais attention aux inconvénient des tableaux de threads
  *     (consommation mémoire, cout d'allocation, ...).
  */
 typedef void * thread_t;
+typedef void* ret;
+SIMPLEQ_HEAD(queue, thread);
+struct queue head ;
+struct thread {
+  thread_t id;
+  ucontext_t context;
+  ret retval;
+  SIMPLEQ_ENTRY(thread) next;
+} *t1, *t2, *current_thread;
 
 /* recuperer l'identifiant du thread courant.
  */
