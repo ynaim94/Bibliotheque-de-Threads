@@ -5,34 +5,18 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-struct thread{
-  thread_t id;
-  ucontext_t context;
-  void * retval;
-  SIMPLEQ_ENTRY(thread) next;
-};
-
-struct thread* current_thread;
-
-
-SIMPLEQ_HEAD(queue, thread);
-struct queue* head;
-
-int main(int argc, char * argv[]){
-  SIMPLEQ_INIT(head);
-  return EXIT_SUCCESS;
-}
-
-
+#define ERROR -1
 
 thread_t thread_self(void){
   return current_thread->id;
 }
 
-int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg){
+int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg) {
   ucontext_t ctx;
   struct thread *th;
-  if (newthread == NULL){
+ 
+
+ if (newthread == NULL){
     fprintf(stderr, "newthread not initialized\n");
     return -1;
   }
@@ -41,32 +25,33 @@ int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg){
     fprintf(stderr, "Error Malloc\n");
     return -1;
   }
-    //  getcontext(&ctx);
-  ctx.uc_stack.ss_size = 64*1024;
+      ctx.uc_stack.ss_size = 64*1024;
   if ((ctx.uc_stack.ss_sp = malloc(ctx.uc_stack.ss_size)) == NULL){
     fprintf(stderr, "Error Malloc\n");
     return -1;
   }
-  ctx.uc_link = NULL;
+
+ ctx.uc_link = NULL;
   makecontext(&ctx, (void (*)(void)) func ,1, funcarg);
   
-  th->id=newthread;
+  th->id=*newthread;
   th->context=ctx;
   th->retval=0;
-  SIMPLEQ_INSERT_TAIL(&head, th, next);
+  SIMPLEQ_INSERT_TAIL(head, th, next);
   return 0;
 }
 
 int thread_yield(void){
-  if ( SIMPLEQ_EMPTY(&head) ) return;
-  SIMPLEQ_INSERT_TAIL(&head, current_thread, next);
-  current_thread=SIMPLEQ_FIRST(&head);
-  SIMPLEQ_REMOVE_HEAD(&head, next);
+  if ( SIMPLEQ_EMPTY(head) ) return ERROR;
+  SIMPLEQ_INSERT_TAIL(head, current_thread, next);
+  current_thread=SIMPLEQ_FIRST(head);
+  SIMPLEQ_REMOVE_HEAD(head, next);
+  return EXIT_FAILURE;
 }
 
 int thread_join(thread_t thread, void **retval){
   struct thread* loop;
-  thread_t tmp=NULL;
+  thread_t tmp= -1;
   void* tmp_ret;
   bool is_present=false;
   int compteur = 0;
@@ -83,17 +68,17 @@ Tant que le thread est présent dans la file, on recommence la boucle jusqu'à c
 	is_present=true;
       }
     }
-    if(tmp==NULL && compteur==0){
+    if(tmp== -1 && compteur==0){
       printf("%p n'appartient pas à la liste\n", thread);
       return -1;
     }
-    if(tmp==NULL && compteur>=0){
+    if(tmp== -1 && compteur>=0){
       printf("%p n'appartient plus à la liste\n", thread);
       is_present=false;
     }
      
-    tmp=NULL;
-    sched_yield();
+    tmp= -1;
+    //scheld_yield();
     compteur++;
   } while (is_present);
   
