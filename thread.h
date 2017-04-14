@@ -9,6 +9,7 @@
  *     mais attention aux inconvénient des tableaux de threads
  *     (consommation mémoire, cout d'allocation, ...).
  */
+
 typedef void * thread_t;
 typedef void* ret;
 SIMPLEQ_HEAD(queue, thread);
@@ -19,6 +20,9 @@ struct thread {
   ret retval;
   SIMPLEQ_ENTRY(thread) next;
 } *t1, *t2, *current_thread;
+
+typedef int thread_t;
+
 
 /* recuperer l'identifiant du thread courant.
  */
@@ -50,7 +54,7 @@ extern int thread_join(thread_t thread, void **retval);
 extern void thread_exit(void *retval);// __attribute__ ((__noreturn__));
 
 /* Interface possible pour les mutex */
-typedef struct thread_mutex { int lock; int locker;} thread_mutex_t;      // anciennement {int dummy;}
+typedef struct thread_mutex { int locker;} thread_mutex_t; 
 int thread_mutex_init(thread_mutex_t *mutex);
 int thread_mutex_destroy(thread_mutex_t *mutex);
 int thread_mutex_lock(thread_mutex_t *mutex);

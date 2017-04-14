@@ -1,36 +1,19 @@
 #include "thread.h"
-#include "queue.h"
+
 #include <ucontext.h>
 #include <stdlib.h>
 #include <stdio.h>
-typedef void* ret;
-SIMPLEQ_HEAD(queue, thread);
-struct queue head;
-
-struct thread {
-  thread_t id;
-  ucontext_t context;
-  ret retval;
-  SIMPLEQ_ENTRY(thread) next;
-} *t1, *t2;
-
-
-
-/* struct thread {
-  thread_t id;
-  ucontext_t context;
- ret retval;
- } *t1, *t2;*/
-struct thread* current_thread ;
 
 thread_t thread_self(void){
   return current_thread->id;
 }
 
-int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg){
+int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg) {
   ucontext_t ctx;
   struct thread *th;
-  if (newthread == NULL){
+ 
+
+ if (newthread == NULL){
     fprintf(stderr, "newthread not initialized\n");
     return -1;
   }
@@ -51,17 +34,18 @@ int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg){
   th->id=newthread;
   th->context=ctx;
   th->retval=0;
+  //  STAILQ_NEXT(th, next);
   SIMPLEQ_INSERT_TAIL(&head, th, next);
   return 0;
 }
 
 int thread_yield(void){
   
-  if ( SIMPLEQ_EMPTY(&head) ) return;
+  if ( SIMPLEQ_EMPTY(&head) ) return -1;
   SIMPLEQ_INSERT_TAIL(&head, current_thread, next);
   current_thread=SIMPLEQ_FIRST(&head);
   SIMPLEQ_REMOVE_HEAD(&head, next);
-    
+  return 0;
 }
 
 /* Permet de placer la valeur de retour du thread spécifié à l'adresse retval */
@@ -84,8 +68,8 @@ int thread_join(thread_t thread, void **retval){
     return -1;
   }
 
-  /* trouver un moyen d'attendre que thread ait fini */
-/*
+   trouver un moyen d'attendre que thread ait fini
+
   if(retval == NULL){// si retval est NULL, ne rien faire, sinon ..
     return 1;
   }
