@@ -51,13 +51,8 @@ int main(int argc, char * argv[]){
 
 
 
-typedef struct thread_mutex { int lock; int locker} thread_mutex_t; // ajout locker
-#define LOCKED 1
-#define UNLOCKED 0
-
 int thread_mutex_init(thread_mutex_t *mutex){
-  mutex->lock = UNLOCKED;
-  mutex->locker = 0;
+  mutex->locker = -1;
   return EXIT_SUCCESS;
 }
 
@@ -67,23 +62,22 @@ int thread_mutex_destroy(thread_mutex_t *mutex){
 }
 
 int thread_mutex_lock(thread_mutex_t *mutex){
-  thread_t id thread_self();
-  if (mutex->lock == LOCKED) {
-    return EXIT_FAILURE
+  thread_t id = thread_self();
+  if (mutex->locker != -1) {
+    return EXIT_FAILURE;
   }
-  mutex->lock = LOCKED;
   mutex->locker = id;
   return EXIT_SUCCESS;
 }
 
 int thread_mutex_unlock(thread_mutex_t *mutex){
-  thread_t id thread_self();
-  if (mutex->lock == UNLOCKED) {
+  thread_t id = thread_self();
+  if (mutex->locker == -1) {
     return EXIT_FAILURE;
   }
   if (mutex->locker != id){
     return EXIT_FAILURE;
   }
-  mutex->lock = UNLOCKED;
+  mutex->locker = -1;
   return EXIT_SUCCESS;
 }
