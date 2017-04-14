@@ -108,7 +108,6 @@ void thread_exit(void *retval){
 ///////////////    Mutex    ////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////
 
-
 int thread_mutex_init(thread_mutex_t *mutex){
   mutex->locker = -1;
   return EXIT_SUCCESS;
@@ -121,12 +120,21 @@ int thread_mutex_destroy(thread_mutex_t *mutex){
 
 int thread_mutex_lock(thread_mutex_t *mutex){
   thread_t id = thread_self();
-  if (mutex->locker != -1) {
+  struct timespec time, time2;
+  time.tv_sec = 0;
+  time.tv_nsec = 100;
+  if (mutex->locker == id)
     return EXIT_FAILURE;
-  }
-  mutex->locker = id;
+  do{  
+    while (mutex->locker != -1){
+      if(nanosleep(&time, &time2) < 0)
+	perror("nanosleep\n");
+    }
+    mutex->locker = id;
+  } while (mutex->locker != id);
   return EXIT_SUCCESS;
 }
+
 
 int thread_mutex_unlock(thread_mutex_t *mutex){
   thread_t id = thread_self();
@@ -139,4 +147,3 @@ int thread_mutex_unlock(thread_mutex_t *mutex){
   mutex->locker = -1;
   return EXIT_SUCCESS;
 }
-
