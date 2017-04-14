@@ -3,6 +3,8 @@
 #include <ucontext.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <time.h>
+#include <stdio.h>
 
 SIMPLEQ_HEAD(queue, thread);
 struct queue *head;
@@ -54,6 +56,9 @@ int thread_join(thread_t thread, void **retval){
   void* tmp_ret;
   bool is_present=false;
   int compteur = 0;
+  struct timespec time, time2;
+  time.tv_sec=0;
+  time.tv_nsec=1000;
   /* on parcourt la file à la recherche du thread. 
 S'il est présent, on sauvegarde les données qui nous intéresse
 Sinon, on sort.
@@ -76,8 +81,10 @@ Tant que le thread est présent dans la file, on recommence la boucle jusqu'à c
       is_present=false;
     }
      
-    tmp=NULL;
-    sched_yield();
+    tmp=NULL;    
+    if (nanosleep(&time,&time2) < 0){
+      perror("nanosleep\n");
+    }
     compteur++;
   } while (is_present);
   
