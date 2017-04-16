@@ -9,7 +9,7 @@ thread_t thread_self(void){
 
 int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg) {
   ucontext_t ctx;
-  struct thread *th;
+ // struct thread *th;
  
 
  if (newthread == NULL){
@@ -17,7 +17,7 @@ int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg) {
     return -1;
   }
   
-  if ((th = malloc (sizeof(struct thread))) == NULL){
+  if ((t1 = malloc (sizeof(struct thread))) == NULL){
     fprintf(stderr, "Error Malloc\n");
     return -1;
   }
@@ -31,11 +31,11 @@ int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg) {
  ctx.uc_link = NULL;
   makecontext(&ctx, (void (*)(void)) func ,1, funcarg);
   
-  th->id=*newthread;
-  th->context=ctx;
-  th->retval=0;
+  t1->id=*newthread;
+  t1->context=ctx;
+  t1->retval=0;
   //  STAILQ_NEXT(th, next);
-  SIMPLEQ_INSERT_TAIL(head, th, next);
+  SIMPLEQ_INSERT_TAIL(head, t1, next);
   return 0;
 }
 

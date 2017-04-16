@@ -13,15 +13,13 @@ thread_t thread_self(void){
 
 int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg) {
   ucontext_t ctx;
-  struct thread *th;
- 
 
  if (newthread == NULL){
     fprintf(stderr, "newthread not initialized\n");
     return -1;
   }
   
-  if ((th = malloc (sizeof(struct thread))) == NULL){
+  if ((t1 = malloc (sizeof(struct thread))) == NULL){
     fprintf(stderr, "Error Malloc\n");
     return -1;
   }
@@ -34,10 +32,10 @@ int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg) {
  ctx.uc_link = NULL;
   makecontext(&ctx, (void (*)(void)) func ,1, funcarg);
   
-  th->id=*newthread;
-  th->context=ctx;
-  th->retval=0;
-  SIMPLEQ_INSERT_TAIL(head, th, next);
+  t1->id=*newthread;
+  t1->context=ctx;
+  t1->retval=0;
+  SIMPLEQ_INSERT_TAIL(head, t1, next);
   return 0;
 }
 
@@ -78,7 +76,7 @@ Tant que le thread est présent dans la file, on recommence la boucle jusqu'à c
     }
      
     tmp= -1;
-    //scheld_yield();
+    //sched_yield();
     compteur++;
   } while (is_present);
   
@@ -99,6 +97,7 @@ void thread_exit(void *retval){
     if (current_id == loop->id){
       loop->retval = retval;
       SIMPLEQ_REMOVE(head, loop, thread, next);
+ /*On doit ajouter un free?*/
     }
   }
 }
