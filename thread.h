@@ -14,13 +14,13 @@
 typedef int thread_t;
 typedef void* ret;
 SIMPLEQ_HEAD(queue, thread);
-struct queue *head ;
+struct queue *head, *head1 ;
 struct thread {
   thread_t id;
   ucontext_t context;
   ret retval;
   SIMPLEQ_ENTRY(thread) next;
-} *t1, *t2, *current_thread;
+} *t1, *t2, *current_thread,*main_thread;
 thread_t current;
 
 
