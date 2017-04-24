@@ -1,8 +1,11 @@
-#include "thread.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <ucontext.h>
 #include <stdbool.h>
+#include <time.h>
+#include <stdio.h>
+#include "queue.h"
+#include "thread.h"
 #define ERROR -1
 
 static int firstThread=1;
@@ -66,64 +69,111 @@ swapcontext(&ctx, &current_thread->context); //On la lance
 }
 
 /* Permet de placer la valeur de retour du thread spécifié à l'adresse retval */
- int thread_join(thread_t thread, void **retval){
-/*Queue head1 init*/
-head1=malloc (sizeof (struct queue));
-SIMPLEQ_INIT(head1);
-/************/
-
+int thread_join(thread_t thread, void **retval){
+  /*Queue head1 init*/
+  head1=malloc (sizeof (struct queue));
+  SIMPLEQ_INIT(head1);
+  /************/
+  
   struct thread* loop;
-  thread_t tmp= -1;
-  void* tmp_ret;
-  bool is_present=false;
-  int compteur = 0;
   /* on parcourt la file à la recherche du thread. 
-S'il est présent, on sauvegarde les données qui nous intéresse
-Sinon, on sort.
-Tant que le thread est présent dans la file, on recommence la boucle jusqu'à ce qu'il n'y soit plus. A ce moment, on sort du do while. */
+     S'il est présent, on sauvegarde les données qui nous intéresse
+     Sinon, on sort.
+     Tant que le thread est présent dans la file, on recommence la boucle jusqu'à ce qu'il n'y soit plus. A ce moment, on sort du do while. */
   //do{
-    SIMPLEQ_FOREACH(loop, head, next){
-      if (loop->id==thread){ //on cherche si thread est bien dans la liste
-	printf("il existe !%d\n", thread);
-	//is_present=true;
-loop->context.uc_link = &current_thread->context; //retourne la main à la thread courante lorsqu'elle termine
-SIMPLEQ_INSERT_TAIL(head1, current_thread, next);//On sauvegarde la thread courante dans une file à part
-current_thread=loop; //loop devient la thread courante
-swapcontext(&loop->context, &current_thread->context);
-SIMPLEQ_REMOVE(head, loop, thread, next);
-   	break; }
-    }
-/*    if(tmp== -1 && compteur==0){
-      printf("%d n'appartient pas à la liste\n", thread);
-      return -1;
-    }
-   /* if(tmp== -1 && compteur>=0){
-      printf("%d n'appartient plus à la liste\n", thread);
-      is_present=false;
-    }
-     
-   tmp= -1;
-    //sched_yield();
-    compteur++;*/
-  //} while (is_present);
+  SIMPLEQ_FOREACH(loop, head, next){
+    if (loop->id==thread){ //on cherche si thread est bien dans la liste
+      printf("il existe !%d\n", thread);
+      //is_present=true;
+      loop->context.uc_link = &current_thread->context; //retourne la main à la thread courante lorsqu'elle termine
+      SIMPLEQ_INSERT_TAIL(head1, current_thread, next);//On sauvegarde la thread courante dans une file à part
+      current_thread=loop; //loop devient la thread courante
+      swapcontext(&loop->context, &current_thread->context);
+      SIMPLEQ_REMOVE(head, loop, thread, next);
+      break; }
+  }
+  /*    if(tmp== -1 && compteur==0){
+	printf("%d n'appartient pas à la liste\n", thread);
+	return -1;
+	}
+	 if(tmp== -1 && compteur>=0){
+	printf("%d n'appartient plus à la liste\n", thread);
+	is_present=false;
+	}
+	
+	tmp= -1;
+	sched_yield();
+	compteur++;
+  } while (is_present);
   
   if(retval != NULL){// si retval est NULL, ne rien faire, sinon ..
-
+    
     *retval=tmp_ret; //..on place la valeur de retour du thread dans retval
   }
-/*Free Queue*/
-free(head1);
-   return 0;
+  Free Queue*/
+  free(head1);
+  return 0;
 }
 
 /* simplement placer retval dans le retval du thread self */
+/* void thread_exit(void *retval){ */
+/*   if ( SIMPLEQ_EMPTY(head) ) free(current_thread); */
+/*   else{ */
+/*     SIMPLEQ_FIRST(head)->retval=retval; */
+/*     free(current_thread); */
+/*     current_thread=SIMPLEQ_FIRST(head); */
+/*     SIMPLEQ_REMOVE_HEAD(head, next); */
+/*   } */
+/* } */
+
 void thread_exit(void *retval){
-if ( SIMPLEQ_EMPTY(head) ) free(current_thread);
-else{
-SIMPLEQ_FIRST(head)->retval=retval;
-free(current_thread);
-current_thread=SIMPLEQ_FIRST(head);
-SIMPLEQ_REMOVE_HEAD(head, next);
-}
+  current = thread_self();
+  struct thread * loop;
+  //struct thread current;
+  SIMPLEQ_FOREACH(loop, head, next){
+    if (current == loop->id){
+      loop->retval = retval;
+      SIMPLEQ_REMOVE(head, loop, thread, next);
+    }
+  }
 }
 
+int thread_mutex_init(thread_mutex_t *mutex){
+  mutex->locker = -1;
+  return EXIT_SUCCESS;
+}
+
+int thread_mutex_destroy(thread_mutex_t *mutex){
+  free(mutex);
+  return EXIT_SUCCESS;
+}
+
+int thread_mutex_lock(thread_mutex_t *mutex){
+  thread_t id = thread_self();
+  struct timespec time, time2;
+  time.tv_sec = 0;
+  time.tv_nsec = 100;
+  if (mutex->locker == id)
+    return EXIT_FAILURE;
+  do{  
+    while (mutex->locker != -1){
+      if(nanosleep(&time, &time2) < 0)
+	perror("nanosleep\n");
+    }
+    mutex->locker = id;
+  } while (mutex->locker != id);
+  return EXIT_SUCCESS;
+}
+
+
+int thread_mutex_unlock(thread_mutex_t *mutex){
+  thread_t id = thread_self();
+  if (mutex->locker == -1) {
+    return EXIT_FAILURE;
+  }
+  if (mutex->locker != id){
+    return EXIT_FAILURE;
+  }
+  mutex->locker = -1;
+  return EXIT_SUCCESS;
+}
