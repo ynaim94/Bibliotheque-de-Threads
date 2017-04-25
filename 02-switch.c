@@ -19,7 +19,7 @@ static void * thfunc(void *id)
 {
   int err, i;
   for(i=0; i<10; i++) {
-    printf("%s yield vers un autre thread\n", (char*) id);
+    printf("%s yield vers un autre thread, id=%d\n", (char*) id,i);
     err = thread_yield();
     assert(!err);
   }
@@ -46,7 +46,7 @@ int main()
     err = thread_yield();
     assert(!err);
   }
-
+  printf("étape du join\n");
   err = thread_join(th3, &res);
   assert(!err);
   assert(res == NULL);
