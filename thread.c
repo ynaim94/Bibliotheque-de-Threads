@@ -11,8 +11,9 @@
 #define MAIN_ID 0
 
 
-static SIMPLEQ_HEAD(queue, thread) head = SIMPLEQ_HEAD_INITIALIZER(head);
-static struct queue head_rest =  SIMPLEQ_HEAD_INITIALIZER(head_rest);
+static SIMPLEQ_HEAD(queue, thread) runq = SIMPLEQ_HEAD_INITIALIZER(runq);
+static struct queue overq =  SIMPLEQ_HEAD_INITIALIZER(overq);
+static struct queue sleepq =  SIMPLEQ_HEAD_INITIALIZER(sleepq);
 
 typedef void* ret;
 
@@ -20,6 +21,7 @@ struct thread {
   thread_t id;
   ucontext_t* context;
   ret retval;
+  struct queue waiting_thread =  SIMPLEQ_HEAD_INITIALIZER(waiting_thread);
   SIMPLEQ_ENTRY(thread) next;
 } *current_thread;
 
@@ -84,7 +86,7 @@ int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg) {
   *newthread = i;
   t1->retval=0;
   
-  SIMPLEQ_INSERT_TAIL(&head, t1, next);
+  SIMPLEQ_INSERT_TAIL(&runq, t1, next);
   i++;
   
   return 0;
@@ -98,21 +100,21 @@ int thread_yield(void){
     create_main_thread();
   }
   
-  if ( SIMPLEQ_EMPTY(&head) ){
+  if ( SIMPLEQ_EMPTY(&runq) ){
     printf("FIFO vide ! \n");
     return 0;
   }
   else{
     /* insertion du thread courant à la fin de la file */
-    SIMPLEQ_INSERT_TAIL(&head, current_thread, next);
+    SIMPLEQ_INSERT_TAIL(&runq, current_thread, next);
     /* On sauvegarde le thread courant pour la suite */
     previous_thread=current_thread;
     /* Rend la main à la thread courante à la fin */
-    SIMPLEQ_FIRST(&head)->context->uc_link=current_thread->context;
+    SIMPLEQ_FIRST(&runq)->context->uc_link=current_thread->context;
     /* La tête devient le thread courant */
-    current_thread=SIMPLEQ_FIRST(&head);;
+    current_thread=SIMPLEQ_FIRST(&runq);;
     /* On supprime la tête de la file */
-    SIMPLEQ_REMOVE_HEAD(&head, next);
+    SIMPLEQ_REMOVE_HEAD(&runq, next);
     /* On effectue le swap */
     swapcontext(previous_thread->context, current_thread->context);
     /* On remet en place le thread courant */
@@ -133,7 +135,7 @@ int thread_join(thread_t thread, void **retval){
   struct thread* loop_rest;
   struct thread *previous_thread;
   /* On cherche dans un premier temps si le thread recherché est dans la file des threads actifs */
-  SIMPLEQ_FOREACH(loop, &head, next){
+  SIMPLEQ_FOREACH(loop, &runq, next){
     if (loop->id==thread){
       printf("il existe dans head !%d\n", thread);
       /* On fait en sorte que une fois exécuté, il revienne */
@@ -143,7 +145,7 @@ int thread_join(thread_t thread, void **retval){
       /* Le nouveau thread courant est le thread ciblé */
       current_thread=loop;
       /* On le retire de la file */
-      SIMPLEQ_REMOVE(&head, loop, thread, next);
+      SIMPLEQ_REMOVE(&runq, loop, thread, next);
       swapcontext(previous_thread->context, current_thread->context);
       /* On revient à la normale */
       current_thread=previous_thread;
@@ -152,9 +154,9 @@ int thread_join(thread_t thread, void **retval){
   }
     
   /* On cherche le thread dans la file des threads non-utilisés */
-  SIMPLEQ_FOREACH(loop_rest,&head_rest, next){
+  SIMPLEQ_FOREACH(loop_rest,&overq, next){
     if (loop_rest->id==thread){
-      printf("il existe dans head_rest\n");
+      printf("il existe dans overq\n");
       if (retval == NULL){
 	/* Ne rien faire */
 	printf("la valeur de retour set ignorée\n");
@@ -192,24 +194,24 @@ void thread_exit(void *retval){
   /* On stocke retval dans le champ du thread qui a fini son exécution */
   printf("Le thread %d place %p dans son champ retval\n", thread_self(), retval);
   thread_rest->retval=retval;
-  SIMPLEQ_INSERT_TAIL(&head_rest, thread_rest, next);
+  SIMPLEQ_INSERT_TAIL(&overq, thread_rest, next);
 
   /* Le thread courant devient la tête de la file */
-  current_thread=SIMPLEQ_FIRST(&head);
+  current_thread=SIMPLEQ_FIRST(&runq);
   /* On stocke la tête dans un pointeur */
-  struct thread* tmp=SIMPLEQ_FIRST(&head);
+  struct thread* tmp=SIMPLEQ_FIRST(&runq);
   struct thread * loop;
-  SIMPLEQ_FOREACH(loop, &head, next){ 
+  SIMPLEQ_FOREACH(loop, &runq, next){ 
     printf("thread n°%d\n", loop->id); 
   }
-  SIMPLEQ_FOREACH(loop, &head_rest, next){ 
+  SIMPLEQ_FOREACH(loop, &overq, next){ 
     printf("thread rest n°%d\n", loop->id); 
   }
-  SIMPLEQ_REMOVE_HEAD(&head, next);
-  SIMPLEQ_FOREACH(loop, &head, next){ 
+  SIMPLEQ_REMOVE_HEAD(&runq, next);
+  SIMPLEQ_FOREACH(loop, &runq, next){ 
     printf("thread n°%d\n", loop->id); 
   }
-  SIMPLEQ_FOREACH(loop, &head_rest, next){ 
+  SIMPLEQ_FOREACH(loop, &overq, next){ 
     printf("thread rest n°%d\n", loop->id); 
   }
   printf("le nouveau thread %d\n", thread_self());
