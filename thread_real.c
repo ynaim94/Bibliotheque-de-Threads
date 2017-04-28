@@ -64,16 +64,24 @@ current_thread=SIMPLEQ_FIRST(head); // La thread à la tête de la Queue devient
 SIMPLEQ_REMOVE_HEAD(head, next); //On l'enlève de la Queue
 swapcontext(&ctx, &current_thread->context); //On la lance
 
+<<<<<<< HEAD
+
+int thread_join(thread_t thread, void **retval){
+=======
  return EXIT_SUCCESS;
 }
 }
 
  int thread_join(thread_t thread, void **retval){
+>>>>>>> c2dcc40a9b0c2c5e210393abec84d6f244dcf120
   struct thread* loop;
-  thread_t tmp= -1;
+  thread_t tmp=NULL;
   void* tmp_ret;
   bool is_present=false;
   int compteur = 0;
+  struct timespec time, time2;
+  time.tv_sec=0;
+  time.tv_nsec=1000;
   /* on parcourt la file à la recherche du thread. 
 S'il est présent, on sauvegarde les données qui nous intéresse
 Sinon, on sort.
@@ -87,6 +95,13 @@ Tant que le thread est présent dans la file, on recommence la boucle jusqu'à c
 	is_present=true;
       }
     }
+<<<<<<< HEAD
+    if(tmp==NULL && compteur==0){
+      printf("%p n'appartient pas à la liste\n", thread);
+      return -1;
+    }
+    if(tmp==NULL && compteur>=0){
+      printf("%p n'appartient plus à la liste\n", thread);
     if(tmp== -1 && compteur==0){
       printf("%d n'appartient pas à la liste\n", thread);
       return -1;
@@ -96,8 +111,10 @@ Tant que le thread est présent dans la file, on recommence la boucle jusqu'à c
       is_present=false;
     }
      
-    tmp= -1;
-    //sched_yield();
+    tmp=NULL;    
+    if (nanosleep(&time,&time2) < 0){
+      perror("nanosleep\n");
+    }
     compteur++;
   } while (is_present);
   
@@ -108,6 +125,8 @@ Tant que le thread est présent dans la file, on recommence la boucle jusqu'à c
     *retval=tmp_ret; //..on place la valeur de retour du thread dans retval
   }
 }
+
+
 
 void thread_exit(void *retval){
   current = thread_self();
