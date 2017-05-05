@@ -157,39 +157,30 @@ int thread_join(thread_t thread, void **retval){
     if (loop->id==thread){
       printf("il existe dans head !%d\n", thread);
       SIMPLEQ_INSERT_HEAD(&(loop->waiting_thread), current_thread, next);
+      SIMPLEQ_INSERT_TAIL(&(sleepq), current_thread, next);
       previous_thread=current_thread;
       current_thread=SIMPLEQ_FIRST(&runq);
       swapcontext(previous_thread->context, current_thread->context);
       current_thread=previous_thread;
-      SIMPLEQ_FOREACH(loop_rest,&overq, next){
+      /* SIMPLEQ_FOREACH(loop_rest,&overq, next){
 	if (loop_rest->id==thread){
 	  over=true;
 	  printf("finalement il existe dans overq\n");
 	  if (retval == NULL){
-	    /* Ne rien faire */
 	    printf("la valeur de retour set ignorée\n");
 	  }
 	    else {
 	      printf("on place dans retval la valeur %p\n", loop_rest->retval);
 	      *retval=loop_rest->retval;
 	    }
-	  return EXIT_SUCCESS; }
-      }
-      /* /\* On fait en sorte que une fois exécuté, il revienne *\/ */
-      /* //loop->context->uc_link=current_thread->context; */
-      /* /\* On sauvegarde le thread courant *\/ */
-      /* previous_thread=current_thread; */
-      /* /\* Le nouveau thread courant est le thread ciblé *\/ */
-      /* current_thread=loop; */
-      /* /\* On le retire de la file *\/ */
-      /* SIMPLEQ_REMOVE(&runq, loop, thread, next); */
-      /* swapcontext(previous_thread->context, current_thread->context); */
-      /* /\* On revient à la normale *\/ */
-      /* current_thread=previous_thread; */
-      break;
+	  return EXIT_SUCCESS; 
+	  }*/
+      *retval = current_thread->retval;
     }
-  }
     
+  }
+}
+
 
 
   return 0;
