@@ -8,6 +8,8 @@ OBJ=$(SRC:.c=.o)
 
 BIN=$(SRC:.c= )
 
+EXEC=example main fibonacci switch mutex join join-main thread create-many create-many-recursive create-many-once switch-many switch-many-join
+
 check: all
 
 all: $(BIN)
@@ -49,7 +51,7 @@ thread.o : thread.h
 
 
 clean:
-	$(RM) $(OBJ) $(BIN) *.ppm *~ *#
+	$(RM) $(OBJ) $(BIN) $(EXEC) time.* *.txt *.ppm *~ *#
 
 .PHONY: clean all
 
