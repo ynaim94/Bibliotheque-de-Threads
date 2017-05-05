@@ -18,17 +18,31 @@ static struct queue sleepq =  SIMPLEQ_HEAD_INITIALIZER(sleepq);
 typedef void* ret;
 
 struct thread {
-  thread_t id;
-  ucontext_t* context;
-  ret retval;
-  struct queue waiting_thread;
-  SIMPLEQ_ENTRY(thread) next;
+	thread_t id;
+	ucontext_t* context;
+	ret retval;
+	struct queue waiting_thread;
+	SIMPLEQ_ENTRY(thread) next;
 } *current_thread;
 
 thread_t current;
 
 
 static int firstThread = 1;
+
+void func2(void *(*func)(void *), void *funcarg){
+	struct thread* loop;
+	void *retval;
+	retval = func(funcarg);
+/*	SIMPLEQ_FOREACH(loop, &overq, next){
+		if (loop->id== thread_self()){
+			  thread_exit(retval );
+			  break;
+		}
+	}*/
+
+	thread_exit(retval );
+}
 
 int create_main_thread(){
 
@@ -37,6 +51,7 @@ int create_main_thread(){
   firstThread = 0;
   current_thread = malloc (sizeof(struct thread));
   current_thread->id = MAIN_ID;
+  SIMPLEQ_INIT(&current_thread->waiting_thread);
   getcontext(&ctx);
   current_thread->context=&ctx;
   current_thread->retval = 0; // ??
@@ -59,6 +74,7 @@ int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg) {
   struct thread* t1;
 
   if (firstThread){
+	  printf("on crée le main \n");
     create_main_thread();
   }
 
@@ -82,11 +98,12 @@ int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg) {
   }
 
   (t1->context)->uc_link =  NULL;
-  makecontext((t1->context), (void (*)(void)) func ,1, funcarg);
+  makecontext((t1->context), (void (*)(void)) func2 ,2,func, funcarg);
   t1->id= i;
   *newthread = i;
   t1->retval=0;
-  SIMPLEQ_INIT(&(t1->waiting_thread));
+  
+  SIMPLEQ_INIT(&t1->waiting_thread);
   SIMPLEQ_INSERT_TAIL(&runq, t1, next);
   i++;
   
@@ -113,7 +130,8 @@ int thread_yield(void){
     /* Rend la main à la thread courante à la fin */
     SIMPLEQ_FIRST(&runq)->context->uc_link=current_thread->context;
     /* La tête devient le thread courant */
-    current_thread=SIMPLEQ_FIRST(&runq);;
+    current_thread=SIMPLEQ_FIRST(&runq);
+	printf("current_thread id : %d",current_thread->id);
     /* On supprime la tête de la file */
     SIMPLEQ_REMOVE_HEAD(&runq, next);
     /* On effectue le swap */
@@ -198,6 +216,7 @@ int thread_join(thread_t thread, void **retval){
 /* } */
 
 void thread_exit(void *retval){
+	struct thread * loop;
   /* On initialise un thread qui va prendre la valeur du thread courant et aller dans la file des threads non utilisés */
   struct thread* thread_rest;
   if ((thread_rest = malloc (sizeof(struct thread))) == NULL){
@@ -210,18 +229,25 @@ void thread_exit(void *retval){
   printf("Le thread %d place %p dans son champ retval\n", thread_self(), retval);
   thread_rest->retval=retval;
   SIMPLEQ_INSERT_TAIL(&overq, thread_rest, next);
-
-  /* Le thread courant devient la tête de la file */
-  current_thread=SIMPLEQ_FIRST(&runq);
-  /* On stocke la tête dans un pointeur */
-  struct thread* tmp=SIMPLEQ_FIRST(&runq);
-  struct thread * loop;
+  
+  SIMPLEQ_FOREACH(loop, &current_thread->waiting_thread, next){
+	  loop->retval = retval;
+	  SIMPLEQ_REMOVE(&sleepq, loop, thread, next);
+	  SIMPLEQ_INSERT_TAIL(&runq,loop,next);
+  }
+  if(!(SIMPLEQ_EMPTY(&runq))){
+	  /* Le thread courant devient la tête de la file */
+	  current_thread=SIMPLEQ_FIRST(&runq);
+	  /* On stocke la tête dans un pointeur */
+//	  struct thread* tmp=SIMPLEQ_FIRST(&runq);
+	  
   SIMPLEQ_FOREACH(loop, &runq, next){ 
-    printf("thread n°%d\n", loop->id); 
+	  printf("thread n°%d\n", loop->id); 
   }
   SIMPLEQ_FOREACH(loop, &overq, next){ 
     printf("thread rest n°%d\n", loop->id); 
-  }
+  }  
+
   SIMPLEQ_REMOVE_HEAD(&runq, next);
   SIMPLEQ_FOREACH(loop, &runq, next){ 
     printf("thread n°%d\n", loop->id); 
@@ -229,9 +255,11 @@ void thread_exit(void *retval){
   SIMPLEQ_FOREACH(loop, &overq, next){ 
     printf("thread rest n°%d\n", loop->id); 
   }
+ 
   printf("le nouveau thread %d\n", thread_self());
   /* Enfin on reprend le contexte du nouveau thread courant */
   setcontext(current_thread->context);
+  }
 }
 
 int thread_mutex_init(thread_mutex_t *mutex){
