@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include "queue.h"
 #include "thread.h"
+#include <valgrind/valgrind.h>
 
 #define ERROR -1
 #define MAIN_ID 0
@@ -16,6 +17,7 @@ static struct queue overq =  SIMPLEQ_HEAD_INITIALIZER(overq);
 static struct queue sleepq =  SIMPLEQ_HEAD_INITIALIZER(sleepq);
 
 typedef void* ret;
+void free_memory();
 
 struct thread {
   thread_t id;
@@ -40,47 +42,62 @@ void func2(void *(*func)(void *), void *funcarg){
 	break;
 	}
 	}*/
-
+  //int a= atexit(free_memory());
+  // printf("func2 %d/n",a==0);
   thread_exit(retval );
+
 }
 
 int create_main_thread(){
-
+  printf("entrée cmt\n");
   /* initialisation du thread courant */
-  ucontext_t ctx;
-  thread_create( MAIN_ID,main,NULL); /*error: To be resolvedd*/
-		 /* firstThread = 0;
+  ucontext_t* ctx;
+  firstThread = 0;
   current_thread = malloc (sizeof(struct thread));
+ printf("malloc main \n");
   current_thread->id = MAIN_ID;
   SIMPLEQ_INIT(&current_thread->waiting_thread);
-  getcontext(&ctx);
-  current_thread->context=&ctx;
-  current_thread->retval = NULL;
-		 */ 
+  ctx=malloc(sizeof(ucontext_t));
+  getcontext(ctx);
+ 
+  
+  ctx->uc_stack.ss_size = 64*1024;
+  if (((ctx->uc_stack.ss_sp) = malloc(ctx->uc_stack.ss_size)) == NULL){
+    fprintf(stderr, "Error malloc\n");
+    return ERROR;
+  }
+  current_thread->context=ctx;
+  current_thread->retval = 0; // ??
+  SIMPLEQ_INIT(&(current_thread->waiting_thread));
+  on_exit((void(*)(void)) free_memory, NULL);
+  printf("sortie cmt\n");
 }
+  
 
 thread_t thread_self(void){
-
+  
   if (firstThread){
     create_main_thread();
   }
-
+  
   return current_thread->id;
 }
 
 int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg) {
   // ucontext_t ctx;
-  void (*)(void)
-  static int i = 1;
   struct thread* t1;
+  static int i = 1;
 
+  if (firstThread){
+    printf("on crée le main \n");
+    create_main_thread();
+  }
  
-
   if (newthread == NULL){
     fprintf(stderr, "newthread not initialized\n");
     return ERROR;
   }
-   
+  
   if ((t1 = malloc (sizeof(struct thread))) == NULL){
     //  fprintf(stderr, "Error malloc\n");
     return ERROR;
@@ -94,21 +111,19 @@ int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg) {
     fprintf(stderr, "Error malloc\n");
     return ERROR;
   }
-
   (t1->context)->uc_link =  NULL;
   makecontext((t1->context), (void (*)(void)) func2 ,2,func, funcarg);
+
+
   t1->id= i;
   *newthread = i;
   t1->retval=0;  
- if (firstThread){
-   current_thread=t1;
-firstThread = 0;
-  }
-else{
+
+
   SIMPLEQ_INIT(&t1->waiting_thread);
   SIMPLEQ_INSERT_TAIL(&runq, t1, next);
   i++;
-  }
+ 
   return 0;
 }
 
@@ -220,7 +235,7 @@ void thread_exit(void *retval){
   /* } */
   printf("exit : waiting thread de %d\n", thread_self());
   SIMPLEQ_FOREACH(tmp, &(current_thread->waiting_thread), next){
-	printf("thread n°%d\n", tmp->id);
+    printf("thread n°%d\n", tmp->id);
   }
   // thread_over->context=malloc(sizeof(ucontext_t));
   thread_over=current_thread;
@@ -228,7 +243,7 @@ void thread_exit(void *retval){
   /* On stocke retval dans le champ du thread qui a fini son exécution */
   printf("Le thread %d place %p dans son champ retval\n", thread_self(), retval);
   thread_over->retval=retval;
-  SIMPLEQ_INSERT_TAIL(&overq, thread_over, next);
+
 
   SIMPLEQ_FOREACH(loop, &current_thread->waiting_thread, next){
     loop->retval = retval;
@@ -237,6 +252,7 @@ void thread_exit(void *retval){
   }
 
   if(!(SIMPLEQ_EMPTY(&runq))){
+  SIMPLEQ_INSERT_TAIL(&overq, thread_over, next);
     /* Le thread courant devient la tête de la file */
     current_thread=SIMPLEQ_FIRST(&runq);
     /* On stocke la tête dans un pointeur */
@@ -247,19 +263,21 @@ void thread_exit(void *retval){
     /* Enfin on reprend le contexte du nouveau thread courant */
     setcontext(current_thread->context);
   }
-  else {
+  /*else {
     free_memory();
 
-  }
+    }*/
+
 }
 
-int free_memory(){
- struct thread * loop;
-    free(current_thread->context->uc_stack.ss_sp);
-    free(current_thread->context);
-    free(current_thread);
-  SIMPLEQ_FOREACH(loop, &runq, next){
-     free(loop->context->uc_stack.ss_sp);
+void free_memory(){
+  printf("entrée free_memory\n");
+  struct thread * loop;
+  free(current_thread->context->uc_stack.ss_sp);
+  free(current_thread->context);
+  free(current_thread);
+  SIMPLEQ_FOREACH(loop, &overq, next){
+    free(loop->context->uc_stack.ss_sp);
     free(loop->context);
     free(loop);
   }
