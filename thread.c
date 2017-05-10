@@ -16,7 +16,8 @@ static struct queue overq =  SIMPLEQ_HEAD_INITIALIZER(overq);
 static struct queue sleepq =  SIMPLEQ_HEAD_INITIALIZER(sleepq);
 
 typedef void* ret;
-
+void free_memory();
+ 
 struct thread {
   thread_t id;
   ucontext_t* context;
@@ -47,15 +48,22 @@ void func2(void *(*func)(void *), void *funcarg){
 int create_main_thread(){
 
   /* initialisation du thread courant */
-  ucontext_t ctx;
+  ucontext_t* ctx;
   firstThread = 0;
   current_thread = malloc (sizeof(struct thread));
   current_thread->id = MAIN_ID;
   SIMPLEQ_INIT(&current_thread->waiting_thread);
-  getcontext(&ctx);
-  current_thread->context=&ctx;
-  current_thread->retval = 0; // ??
-  SIMPLEQ_INIT(&(current_thread->waiting_thread));
+  ctx=malloc(sizeof(ucontext_t));  
+  getcontext(ctx);
+  ctx->uc_stack.ss_size = 64*1024;
+  if (((ctx->uc_stack.ss_sp) = malloc(ctx->uc_stack.ss_size)) == NULL){
+    fprintf(stderr, "Error malloc\n");
+    return ERROR;
+  }
+  current_thread->context=ctx;
+  current_thread->retval = NULL;
+  on_exit((void(*)(void)) free_memory, NULL);
+  
 }
 
 thread_t thread_self(void){
@@ -226,7 +234,7 @@ void thread_exit(void *retval){
   /* On stocke retval dans le champ du thread qui a fini son exécution */
   printf("Le thread %d place %p dans son champ retval\n", thread_self(), retval);
   thread_over->retval=retval;
-  SIMPLEQ_INSERT_TAIL(&overq, thread_over, next);
+ 
 
   SIMPLEQ_FOREACH(loop, &current_thread->waiting_thread, next){
     loop->retval = retval;
@@ -235,6 +243,7 @@ void thread_exit(void *retval){
   }
 
   if(!(SIMPLEQ_EMPTY(&runq))){
+     SIMPLEQ_INSERT_TAIL(&overq, thread_over, next);
     /* Le thread courant devient la tête de la file */
     current_thread=SIMPLEQ_FIRST(&runq);
     /* On stocke la tête dans un pointeur */
@@ -244,6 +253,19 @@ void thread_exit(void *retval){
     printf("le nouveau thread %d\n", thread_self());
     /* Enfin on reprend le contexte du nouveau thread courant */
     setcontext(current_thread->context);
+  }
+}
+
+void free_memory(){
+  // printf("entrée free_memory\n");
+  struct thread * loop;
+  free(current_thread->context->uc_stack.ss_sp);
+  free(current_thread->context);
+  free(current_thread);
+  SIMPLEQ_FOREACH(loop, &overq, next){
+    free(loop->context->uc_stack.ss_sp);
+    free(loop->context);
+    free(loop);
   }
 }
 
