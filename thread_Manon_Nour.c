@@ -66,6 +66,7 @@ int create_main_thread(){
     return ERROR;
   }
   current_thread->context=ctx;
+  current_thread->valgrind_stackid = VALGRIND_STACK_REGISTER((current_thread->context)->uc_stack.ss_sp, (current_thread->context)->uc_stack.ss_sp + (current_thread->context)->uc_stack.ss_size);
   current_thread->retval = 0; // ??
   SIMPLEQ_INIT(&(current_thread->waiting_thread));
   on_exit((void(*)(void)) free_memory, NULL);
@@ -266,11 +267,15 @@ void thread_exit(void *retval){
 
 
 void free_memory(){
+  printf("free\n");
   struct thread * loop;
+  VALGRIND_STACK_DEREGISTER(current_thread->valgrind_stackid);
+  free(current_thread->context->uc_stack.ss_sp);
   free(current_thread->context);
   free(current_thread);
   int length = 0;
   SIMPLEQ_FOREACH(loop, &overq, next){
+    printf("dans la boucle\n");
     VALGRIND_STACK_DEREGISTER(loop->valgrind_stackid);
     free(loop->context->uc_stack.ss_sp);
     free(loop->context);
