@@ -194,11 +194,11 @@ int thread_join(thread_t thread, void **retval){
       previous_thread=current_thread;
       current_thread=SIMPLEQ_FIRST(&runq);
       SIMPLEQ_REMOVE_HEAD(&runq, next);
-      printf("j'étais %d, je lance %d\n", previous_thread->id, thread_self());
-      printf("test\n");
+      //      printf("j'étais %d, je lance %d\n", previous_thread->id, thread_self());
+      //printf("test %p %p \n",previous_thread->context, current_thread->context);
       swapcontext(previous_thread->context, current_thread->context);
       current_thread=previous_thread;
-      printf("Je suis revenu au contexte de %d\n", thread_self());
+      //printf("Je suis revenu au contexte de %d\n", thread_self());
       if(retval!=NULL){
 	*retval = current_thread->retval;
       }
@@ -322,13 +322,16 @@ int thread_mutex_unlock(thread_mutex_t *mutex){
     return EXIT_FAILURE;
   }
   else {
-    //printf("Je suis %d, je libère le mutex\n", thread_self());
+    //   printf("Je suis %d, je libère le mutex\n", thread_self());
     if (!SIMPLEQ_EMPTY(&(mutex->mutexq))){
       tmp=SIMPLEQ_FIRST(&(mutex->mutexq));
       SIMPLEQ_REMOVE_HEAD(&(mutex->mutexq),next);
       SIMPLEQ_INSERT_TAIL(&runq, tmp, next);
       mutex->locker=tmp->id;
-	}
+    }
+    else {
+      mutex->locker=-1;
+    }
     return EXIT_SUCCESS;
   }
 }
