@@ -17,6 +17,7 @@
 
 static void * fibo(void *_value)
 {
+
   thread_t th, th2;
   int err;
   void *res = NULL, *res2 = NULL;
@@ -43,16 +44,30 @@ static void * fibo(void *_value)
 
 int main(int argc, char *argv[])
 {
+
+	struct timeval tv1;
+	struct timeval tv2;
   unsigned long value, res;
+
+  gettimeofday(&tv1,NULL);
 
   if (argc < 2) {
     printf("argument manquant: entier x pour lequel calculer fibonacci(x)\n");
+	 gettimeofday(&tv2,NULL);
     return -1;
   }
 
   value = atoi(argv[1]);
   res = (unsigned long) fibo((void *)value);
+  
+  gettimeofday(&tv2,NULL);
+
+
+   
   printf("fibo de %ld = %ld\n", value, res);
 
+   double time = (tv2.tv_sec - tv1.tv_sec) + (tv2.tv_usec - tv1.tv_usec)/1000000.0;
+  printf("time : %f\n",time);
+  
   return 0;
 }

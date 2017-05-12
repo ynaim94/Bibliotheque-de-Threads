@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include "queue.h"
 #include "thread.h"
+#include "mutex.h"
 
 #define ERROR -1
 #define MAIN_ID 0
@@ -82,7 +83,7 @@ int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg) {
   struct thread* t1;
 
   if (firstThread){
-    printf("on crée le main \n");
+    // printf("on crée le main \n");
     create_main_thread();
   }
 
@@ -139,7 +140,7 @@ int thread_yield(void){
     SIMPLEQ_FIRST(&runq)->context->uc_link=current_thread->context;
     /* La tête devient le thread courant */
     current_thread=SIMPLEQ_FIRST(&runq);
-    printf("current_thread id : %d",current_thread->id);
+    // printf("current_thread id : %d",current_thread->id);
     /* On supprime la tête de la file */
     SIMPLEQ_REMOVE_HEAD(&runq, next);
     /* On effectue le swap */
@@ -157,7 +158,7 @@ int thread_join(thread_t thread, void **retval){
   /*Queue head1 init*/
 
   /************/
-  printf("%d attend %d avec join\n", thread_self(), thread);
+  // printf("%d attend %d avec join\n", thread_self(), thread);
   struct thread* loop;
   struct thread* loop_rest;
   struct thread *previous_thread;
@@ -166,13 +167,13 @@ int thread_join(thread_t thread, void **retval){
   /* On cherche le thread dans la file des threads non-utilisés */
   SIMPLEQ_FOREACH(loop_rest,&overq, next){
     if (loop_rest->id==thread){
-      printf("il existe dans overq\n");
+      // printf("il existe dans overq\n");
       if (retval == NULL){
 	/* Ne rien faire */
-	printf("la valeur de retour set ignorée\n");
+	// printf("la valeur de retour set ignorée\n");
       }
       else {
-	printf("on place dans retval la valeur %p\n", loop_rest->retval);
+	// printf("on place dans retval la valeur %p\n", loop_rest->retval);
 	*retval=loop_rest->retval;
       }
       return EXIT_SUCCESS; }
@@ -182,20 +183,20 @@ int thread_join(thread_t thread, void **retval){
   /* On cherche dans un premier temps si le thread recherché est dans la file des threads actifs */
   SIMPLEQ_FOREACH(loop, &runq, next){
     if (loop->id==thread){
-      printf("il existe dans head !%d\n", thread);
-      printf("waiting thread de %d\n", loop->id);
+      // printf("il existe dans head !%d\n", thread);
+      // printf("waiting thread de %d\n", loop->id);
       SIMPLEQ_INSERT_HEAD(&(loop->waiting_thread), current_thread, next);
       SIMPLEQ_INSERT_TAIL(&(sleepq), current_thread, next);
       SIMPLEQ_FOREACH(tmp, &(loop->waiting_thread), next){
-	printf("thread n°%d\n", tmp->id);
+	// printf("thread n°%d\n", tmp->id);
       }
       previous_thread=current_thread;
       current_thread=SIMPLEQ_FIRST(&runq);
       SIMPLEQ_REMOVE_HEAD(&runq, next);
-      printf("j'étais %d, je lance %d\n", previous_thread->id, thread_self());
+      // printf("j'étais %d, je lance %d\n", previous_thread->id, thread_self());
       swapcontext(previous_thread->context, current_thread->context);
       current_thread=previous_thread;
-      printf("Je suis revenu au contexte de %d\n", thread_self());
+      // printf("Je suis revenu au contexte de %d\n", thread_self());
       *retval = current_thread->retval;
     }
     
@@ -224,15 +225,15 @@ void thread_exit(void *retval){
   /*   //    fprintf(stderr, "Error malloc\n"); */
   /*   return; */
   /* } */
-  printf("exit : waiting thread de %d\n", thread_self());
+  // printf("exit : waiting thread de %d\n", thread_self());
   SIMPLEQ_FOREACH(tmp, &(current_thread->waiting_thread), next){
-	printf("thread n°%d\n", tmp->id);
+	// printf("thread n°%d\n", tmp->id);
   }
   // thread_over->context=malloc(sizeof(ucontext_t));
   thread_over=current_thread;
 
   /* On stocke retval dans le champ du thread qui a fini son exécution */
-  printf("Le thread %d place %p dans son champ retval\n", thread_self(), retval);
+  // printf("Le thread %d place %p dans son champ retval\n", thread_self(), retval);
   thread_over->retval=retval;
  
 
@@ -250,14 +251,14 @@ void thread_exit(void *retval){
     //	  struct thread* tmp=SIMPLEQ_FIRST(&runq);
 	  
     SIMPLEQ_REMOVE_HEAD(&runq, next);
-    printf("le nouveau thread %d\n", thread_self());
+    // printf("le nouveau thread %d\n", thread_self());
     /* Enfin on reprend le contexte du nouveau thread courant */
     setcontext(current_thread->context);
   }
 }
 
 void free_memory(){
-  // printf("entrée free_memory\n");
+  // // printf("entrée free_memory\n");
   struct thread * loop;
   free(current_thread->context->uc_stack.ss_sp);
   free(current_thread->context);
@@ -268,7 +269,7 @@ void free_memory(){
     free(loop);
   }
 }
-
+/*
 int thread_mutex_init(thread_mutex_t *mutex){
   mutex->dummy = -1;
   return EXIT_SUCCESS;
@@ -307,4 +308,4 @@ int thread_mutex_unlock(thread_mutex_t *mutex){
   }
   mutex->dummy = -1;
   return EXIT_SUCCESS;
-}
+}*/

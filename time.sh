@@ -1,8 +1,8 @@
 #!/bin/bash
 
-if [[ $# -ne 1 ]]
+if [[ $# -ne 2 ]]
 then
-    echo "Usage : ./fibonacci i avec i entier"
+    echo "Usage : ./time nom_test nbr_threads"
     exit;
 fi
 
@@ -11,10 +11,10 @@ then
     rm time.txt
 fi
 
-for i in `seq 1 $1`
+for i in `seq 1 $2`
 do
 
-    ./create-many $i  > tmp.txt
+    ./$1 $i  > tmp.txt
     TIME=`cat tmp.txt | grep time | awk '{print $3}' `
     echo "$i $TIME" >> time.txt
 done
