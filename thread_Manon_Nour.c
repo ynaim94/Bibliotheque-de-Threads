@@ -25,6 +25,7 @@ struct thread {
   ret retval;
   struct queue waiting_thread;
   SIMPLEQ_ENTRY(thread) next;
+  int valgrind_stackid;
 } *current_thread;
 
 thread_t current;
@@ -49,12 +50,10 @@ void func2(void *(*func)(void *), void *funcarg){
 }
 
 int create_main_thread(){
-  printf("entrée cmt\n");
   /* initialisation du thread courant */
   ucontext_t* ctx;
   firstThread = 0;
   current_thread = malloc (sizeof(struct thread));
- printf("malloc main \n");
   current_thread->id = MAIN_ID;
   SIMPLEQ_INIT(&current_thread->waiting_thread);
   ctx=malloc(sizeof(ucontext_t));
@@ -67,10 +66,10 @@ int create_main_thread(){
     return ERROR;
   }
   current_thread->context=ctx;
+  current_thread->valgrind_stackid = VALGRIND_STACK_REGISTER((current_thread->context)->uc_stack.ss_sp, (current_thread->context)->uc_stack.ss_sp + (current_thread->context)->uc_stack.ss_size);
   current_thread->retval = 0; // ??
   SIMPLEQ_INIT(&(current_thread->waiting_thread));
   on_exit((void(*)(void)) free_memory, NULL);
-  printf("sortie cmt\n");
 }
   
 
@@ -89,7 +88,6 @@ int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg) {
   static int i = 1;
 
   if (firstThread){
-    printf("on crée le main \n");
     create_main_thread();
   }
  
@@ -111,6 +109,7 @@ int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg) {
     fprintf(stderr, "Error malloc\n");
     return ERROR;
   }
+  t1->valgrind_stackid = VALGRIND_STACK_REGISTER((t1->context)->uc_stack.ss_sp, (t1->context)->uc_stack.ss_sp + (t1->context)->uc_stack.ss_size);
   (t1->context)->uc_link =  NULL;
   makecontext((t1->context), (void (*)(void)) func2 ,2,func, funcarg);
 
@@ -263,25 +262,36 @@ void thread_exit(void *retval){
     /* Enfin on reprend le contexte du nouveau thread courant */
     setcontext(current_thread->context);
   }
-  /*else {
-    free_memory();
-
-    }*/
 
 }
 
+
 void free_memory(){
-  printf("entrée free_memory\n");
+  printf("free\n");
   struct thread * loop;
+  VALGRIND_STACK_DEREGISTER(current_thread->valgrind_stackid);
   free(current_thread->context->uc_stack.ss_sp);
   free(current_thread->context);
   free(current_thread);
+  int length = 0;
   SIMPLEQ_FOREACH(loop, &overq, next){
+    VALGRIND_STACK_DEREGISTER(loop->valgrind_stackid);
     free(loop->context->uc_stack.ss_sp);
     free(loop->context);
-    free(loop);
+    length++;
+  }
+  int i = 0;
+  struct thread* tmp[length];
+  SIMPLEQ_FOREACH(loop, &overq, next){
+    tmp[i]=loop;
+    i++;
+  }
+  for(i = 0; i<length; i++){
+    free(tmp[i]);
   }
 }
+
+
 int thread_mutex_init(thread_mutex_t *mutex){
   mutex->dummy = -1;
   return EXIT_SUCCESS;
