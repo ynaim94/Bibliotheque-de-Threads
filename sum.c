@@ -1,21 +1,20 @@
 #include <stdio.h>
 #include <sys/time.h>
 #include "thread.h"
-#include "mutex.h"
 
 int a[SIZE];
 int shared_index = 0;
 int total_sum = 0;
-pthread_mutex_t mutex1;
+thread_mutex_t mutex1;
 
 void *sum(void *ignored)//changer le nom du paramètre
 {
  int index, sum = 0;
  do {
-    pthread_mutex_lock(&mutex1);
+    thread_mutex_lock(&mutex1);
     index = shared_index;
     shared_index++;
-    pthread_mutex_unlock(&mutex1);
+    thread_mutex_unlock(&mutex1);
 
     if (index < SIZE)
         sum += *(a + index);
@@ -23,9 +22,9 @@ void *sum(void *ignored)//changer le nom du paramètre
 while
  (index < SIZE);
 
-pthread_mutex_lock(&mutex1);
+thread_mutex_lock(&mutex1);
 total_sum += sum;
-pthread_mutex_unlock(&mutex1);
+thread_mutex_unlock(&mutex1);
 
  return 0;
 }

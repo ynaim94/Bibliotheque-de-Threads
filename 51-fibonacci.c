@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <sys/time.h>
 #include "thread.h"
 
 /* fibonacci.
@@ -45,11 +46,13 @@ static void * fibo(void *_value)
 int main(int argc, char *argv[])
 {
 
+
 	struct timeval tv1;
 	struct timeval tv2;
   unsigned long value, res;
 
   gettimeofday(&tv1,NULL);
+  
 
   if (argc < 2) {
     printf("argument manquant: entier x pour lequel calculer fibonacci(x)\n");
