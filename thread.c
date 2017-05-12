@@ -27,7 +27,6 @@ struct thread {
 } *current_thread;
 
 
-
 thread_t current;
 
 
@@ -295,6 +294,10 @@ int thread_mutex_lock(thread_mutex_t *mutex){
     mutex->locker=thread_self();
     //printf("Je suis %d j'ai pris le lock\n", thread_self());
     return EXIT_SUCCESS;
+  }
+  else if (mutex->locker==thread_self()){
+    perror("Deux lock\n");
+    return EXIT_FAILURE;
   }
   else {
     SIMPLEQ_INSERT_TAIL(&(mutex->mutexq), current_thread, next);
