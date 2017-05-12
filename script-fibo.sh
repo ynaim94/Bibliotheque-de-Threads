@@ -1,5 +1,8 @@
 #!/bin/bash
 
+#pas d'exécutable fibonacci ?
+#additionner user + sys
+
 if [[ $# -ne 1 ]]
 then
     echo "Usage : ./fibonacci i avec i entier"
@@ -19,4 +22,4 @@ do
     echo "$i $TIME" >> time.txt
 done
 
-gnuplot graph.conf
+#gnuplot graph.conf

@@ -3,6 +3,10 @@
 
 #ifndef USE_PTHREAD
 
+#include "queue.h"
+
+SIMPLEQ_HEAD(queue, thread);
+
 /* identifiant de thread
  * NB: pourra être un entier au lieu d'un pointeur si ca vous arrange,
  *     mais attention aux inconvénient des tableaux de threads
@@ -40,7 +44,10 @@ extern int thread_join(thread_t thread, void **retval);
 extern void thread_exit(void *retval);// __attribute__ ((__noreturn__));
 
 /* Interface possible pour les mutex */
-typedef struct thread_mutex { int dummy; } thread_mutex_t;
+typedef struct thread_mutex { 
+  struct queue mutexq;
+  int locker;
+} thread_mutex_t;
 int thread_mutex_init(thread_mutex_t *mutex);
 int thread_mutex_destroy(thread_mutex_t *mutex);
 int thread_mutex_lock(thread_mutex_t *mutex);

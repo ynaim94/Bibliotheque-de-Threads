@@ -11,7 +11,7 @@
 #define MAIN_ID 0
 
 
-static SIMPLEQ_HEAD(queue, thread) runq = SIMPLEQ_HEAD_INITIALIZER(runq);
+static struct queue runq = SIMPLEQ_HEAD_INITIALIZER(runq);
 static struct queue overq =  SIMPLEQ_HEAD_INITIALIZER(overq);
 static struct queue sleepq =  SIMPLEQ_HEAD_INITIALIZER(sleepq);
 
@@ -25,6 +25,8 @@ struct thread {
   struct queue waiting_thread;
   SIMPLEQ_ENTRY(thread) next;
 } *current_thread;
+
+
 
 thread_t current;
 
@@ -139,7 +141,7 @@ int thread_yield(void){
     SIMPLEQ_FIRST(&runq)->context->uc_link=current_thread->context;
     /* La tête devient le thread courant */
     current_thread=SIMPLEQ_FIRST(&runq);
-    printf("current_thread id : %d",current_thread->id);
+    printf("current_thread id : %d\n",current_thread->id);
     /* On supprime la tête de la file */
     SIMPLEQ_REMOVE_HEAD(&runq, next);
     /* On effectue le swap */
@@ -193,10 +195,14 @@ int thread_join(thread_t thread, void **retval){
       current_thread=SIMPLEQ_FIRST(&runq);
       SIMPLEQ_REMOVE_HEAD(&runq, next);
       printf("j'étais %d, je lance %d\n", previous_thread->id, thread_self());
+      printf("test\n");
       swapcontext(previous_thread->context, current_thread->context);
       current_thread=previous_thread;
       printf("Je suis revenu au contexte de %d\n", thread_self());
-      *retval = current_thread->retval;
+      if(retval!=NULL){
+	*retval = current_thread->retval;
+      }
+      printf("wat\n");
     }
     
   }
@@ -270,41 +276,60 @@ void free_memory(){
 }
 
 int thread_mutex_init(thread_mutex_t *mutex){
-  mutex->dummy = -1;
+  SIMPLEQ_INIT(&(mutex->mutexq));
+  mutex->locker=-1;
   return EXIT_SUCCESS;
 }
 
 int thread_mutex_destroy(thread_mutex_t *mutex){
-  free(mutex);
+  struct thread* loop;
+  SIMPLEQ_FOREACH(loop, &(mutex->mutexq), next){
+    SIMPLEQ_REMOVE_HEAD(&(mutex->mutexq), next);
+  }
   return EXIT_SUCCESS;
 }
 
 int thread_mutex_lock(thread_mutex_t *mutex){
-  thread_t id = thread_self();
-  struct timespec time, time2;
-  time.tv_sec = 0;
-  time.tv_nsec = 100;
-  if (mutex->dummy == id)
-    return EXIT_FAILURE;
-  do{  
-    while (mutex->dummy != -1){
-      if(nanosleep(&time, &time2) < 0)
-	perror("nanosleep\n");
-    }
-    mutex->dummy = id;
-  } while (mutex->dummy != id);
+  struct thread* previous_thread;
+  struct thread* loop;
+  if (mutex->locker==-1){
+    mutex->locker=thread_self();
+    //printf("Je suis %d j'ai pris le lock\n", thread_self());
+    return EXIT_SUCCESS;
+  }
+  else {
+    SIMPLEQ_INSERT_TAIL(&(mutex->mutexq), current_thread, next);
+    do {
+      //printf("Je suis %d, je suis en attente, voici la waiting\n", thread_self());
+      /* SIMPLEQ_FOREACH(loop, &(mutex->mutexq),next){ */
+      /* 	printf("id : %d \n", loop->id); */
+      /* } */
+      previous_thread=current_thread;
+      current_thread=SIMPLEQ_FIRST(&runq);
+      SIMPLEQ_REMOVE_HEAD(&runq, next);
+      //printf("Je suis dans la boucle du lock de %d et je lance %d\n", previous_thread->id, thread_self());
+      swapcontext(previous_thread->context, current_thread->context);
+      current_thread=previous_thread;
+    } while(mutex->locker!=thread_self() && mutex->locker!=-1);
+    mutex->locker=thread_self();
+  }
   return EXIT_SUCCESS;
 }
 
 
 int thread_mutex_unlock(thread_mutex_t *mutex){
-  thread_t id = thread_self();
-  if (mutex->dummy == -1) {
+  struct thread* tmp;
+  if (mutex->locker!=thread_self()){
     return EXIT_FAILURE;
   }
-  if (mutex->dummy != id){
-    return EXIT_FAILURE;
+  else {
+    //printf("Je suis %d, je libère le mutex\n", thread_self());
+    if (!SIMPLEQ_EMPTY(&(mutex->mutexq))){
+      tmp=SIMPLEQ_FIRST(&(mutex->mutexq));
+      SIMPLEQ_REMOVE_HEAD(&(mutex->mutexq),next);
+      SIMPLEQ_INSERT_TAIL(&runq, tmp, next);
+      mutex->locker=tmp->id;
+    }
+    return EXIT_SUCCESS;
   }
-  mutex->dummy = -1;
-  return EXIT_SUCCESS;
 }
