@@ -19,4 +19,4 @@ do
     echo "$i $TIME" >> time.txt
 done
 
-gnuplot graph.conf
+#gnuplot graph.conf

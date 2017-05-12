@@ -5,7 +5,7 @@
 /* test du thread_self et yield du main seul.
  *
  * le programme doit retourner correctement.
- * valgrind doit être content.
+ * valgrind doit être content
  *
  * support nécessaire:
  * - thread_yield() depuis et vers le main

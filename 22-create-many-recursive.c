@@ -34,16 +34,26 @@ static void * thfunc(void *_nb)
 int main(int argc, char *argv[])
 {
   unsigned long nb;
+  struct timeval tv1;
+  struct timeval tv2;
+
+  gettimeofday(&tv1,NULL);
 
   if (argc < 2) {
     printf("argument manquant: nombre de threads\n");
+	gettimeofday(&tv2,NULL);
     return -1;
   }
 
   nb = atoi(argv[1]);
 
   thfunc((void*) nb);
+  
+  gettimeofday(&tv2,NULL);
 
   printf("%ld threads créés et détruits récursivement\n", nb);
+
+  double time = (tv2.tv_sec - tv1.tv_sec) + (tv2.tv_usec - tv1.tv_usec)/1000000.0;
+  printf("time : %f\n",time);
   return 0;
 }
