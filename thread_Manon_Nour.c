@@ -275,7 +275,6 @@ void free_memory(){
   free(current_thread);
   int length = 0;
   SIMPLEQ_FOREACH(loop, &overq, next){
-    printf("dans la boucle\n");
     VALGRIND_STACK_DEREGISTER(loop->valgrind_stackid);
     free(loop->context->uc_stack.ss_sp);
     free(loop->context);
