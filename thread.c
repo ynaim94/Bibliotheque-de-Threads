@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include "queue.h"
 #include "thread.h"
+#include <valgrind/valgrind.h>
 
 #define ERROR -1
 #define MAIN_ID 0
@@ -24,6 +25,7 @@ struct thread {
   ret retval;
   struct queue waiting_thread;
   SIMPLEQ_ENTRY(thread) next;
+  int valgrind_stackid;
 } *current_thread;
 
 
@@ -62,6 +64,7 @@ int create_main_thread(){
     return ERROR;
   }
   current_thread->context=ctx;
+  current_thread->valgrind_stackid = VALGRIND_STACK_REGISTER((current_thread->context)->uc_stack.ss_sp, (current_thread->context)->uc_stack.ss_sp + (current_thread->context)->uc_stack.ss_size);
   current_thread->retval = NULL;
   on_exit((void(*)(void)) free_memory, NULL);
   
@@ -105,7 +108,7 @@ int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg) {
     fprintf(stderr, "Error malloc\n");
     return ERROR;
   }
-
+  t1->valgrind_stackid = VALGRIND_STACK_REGISTER((t1->context)->uc_stack.ss_sp, (t1->context)->uc_stack.ss_sp + (t1->context)->uc_stack.ss_size);
   (t1->context)->uc_link =  NULL;
   makecontext((t1->context), (void (*)(void)) func2 ,2,func, funcarg);
   t1->id= i;
@@ -128,7 +131,6 @@ int thread_yield(void){
   }
   
   if ( SIMPLEQ_EMPTY(&runq) ){
-    printf("FIFO vide ! \n");
     return 0;
   }
   else{
@@ -261,15 +263,26 @@ void thread_exit(void *retval){
 }
 
 void free_memory(){
-  // // printf("entrée free_memory\n");
   struct thread * loop;
+  VALGRIND_STACK_DEREGISTER(current_thread->valgrind_stackid);
   free(current_thread->context->uc_stack.ss_sp);
   free(current_thread->context);
   free(current_thread);
+  int length = 0;
   SIMPLEQ_FOREACH(loop, &overq, next){
+    VALGRIND_STACK_DEREGISTER(loop->valgrind_stackid);
     free(loop->context->uc_stack.ss_sp);
     free(loop->context);
-    free(loop);
+    length++;
+  }
+  int i = 0;
+  struct thread* tmp[length];
+  SIMPLEQ_FOREACH(loop, &overq, next){
+    tmp[i]=loop;
+    i++;
+  }
+  for(i = 0; i<length; i++){
+    free(tmp[i]);
   }
 }
 

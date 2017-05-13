@@ -291,7 +291,7 @@ void free_memory(){
   }
 }
 
-
+/*
 int thread_mutex_init(thread_mutex_t *mutex){
   mutex->dummy = -1;
   return EXIT_SUCCESS;
@@ -330,4 +330,4 @@ int thread_mutex_unlock(thread_mutex_t *mutex){
   }
   mutex->dummy = -1;
   return EXIT_SUCCESS;
-}
+}*/
