@@ -46,12 +46,12 @@ void func2(void *(*func)(void *), void *funcarg){
 void free_memory(){
   struct thread * loop;
   VALGRIND_STACK_DEREGISTER(current_thread->valgrind_stackid);
-  /*libérer les malloc du thread courant*/
+  /*libérer les allocations mémoires du thread courant*/
   free(current_thread->context->uc_stack.ss_sp);
   free(current_thread->context);
   free(current_thread);
   int length = 0;
-  /*libérer les malloc des threads terminés*/
+  /*libérer les allocations mémoires des threads terminés*/
   SIMPLEQ_FOREACH(loop, &overq, next){
     VALGRIND_STACK_DEREGISTER(loop->valgrind_stackid);
     free(loop->context->uc_stack.ss_sp);
@@ -68,6 +68,7 @@ void free_memory(){
     free(tmp[i]);
   }
   /*libérer les malloc des threads prêts*/
+  length=0;
   SIMPLEQ_FOREACH(loop, &runq, next){
     VALGRIND_STACK_DEREGISTER(loop->valgrind_stackid);
     free(loop->context->uc_stack.ss_sp);
@@ -75,8 +76,7 @@ void free_memory(){
       length++;
   }
    i = 0;
-   length=0;
-  struct thread* tmp1[length];
+   struct thread* tmp1[length];
   SIMPLEQ_FOREACH(loop, &runq, next){
     tmp1[i]=loop;
     i++;
