@@ -14,7 +14,6 @@
 
 static struct queue runq = SIMPLEQ_HEAD_INITIALIZER(runq);
 static struct queue overq =  SIMPLEQ_HEAD_INITIALIZER(overq);
-static struct queue sleepq =  SIMPLEQ_HEAD_INITIALIZER(sleepq);
 
 typedef void* ret;
 void free_memory();
@@ -38,13 +37,6 @@ void func2(void *(*func)(void *), void *funcarg){
   struct thread* loop;
   void *retval;
   retval = func(funcarg);
-  /*	SIMPLEQ_FOREACH(loop, &overq, next){
-	if (loop->id== thread_self()){
-	thread_exit(retval );
-	break;
-	}
-	}*/
-
   thread_exit(retval );
 }
 
@@ -86,7 +78,6 @@ int thread_create(thread_t *newthread, void *(*func)(void *), void *funcarg) {
   struct thread* t1;
 
   if (firstThread){
-    // printf("on crée le main \n");
     create_main_thread();
   }
 
@@ -157,10 +148,6 @@ int thread_yield(void){
 
 /* Permet de placer la valeur de retour du thread spécifié à l'adresse retval */
 int thread_join(thread_t thread, void **retval){
-  /*Queue head1 init*/
-
-  /************/
-  // printf("%d attend %d avec join\n", thread_self(), thread);
   struct thread* loop;
   struct thread* loop_rest;
   struct thread *previous_thread;
@@ -169,13 +156,10 @@ int thread_join(thread_t thread, void **retval){
   /* On cherche le thread dans la file des threads non-utilisés */
   SIMPLEQ_FOREACH(loop_rest,&overq, next){
     if (loop_rest->id==thread){
-      // printf("il existe dans overq\n");
       if (retval == NULL){
 	/* Ne rien faire */
-	// printf("la valeur de retour set ignorée\n");
       }
       else {
-	// printf("on place dans retval la valeur %p\n", loop_rest->retval);
 	*retval=loop_rest->retval;
       }
       return EXIT_SUCCESS; }
@@ -185,21 +169,12 @@ int thread_join(thread_t thread, void **retval){
   /* On cherche dans un premier temps si le thread recherché est dans la file des threads actifs */
   SIMPLEQ_FOREACH(loop, &runq, next){
     if (loop->id==thread){
-      // printf("il existe dans head !%d\n", thread);
-      // printf("waiting thread de %d\n", loop->id);
       SIMPLEQ_INSERT_HEAD(&(loop->waiting_thread), current_thread, next);
-      SIMPLEQ_INSERT_TAIL(&(sleepq), current_thread, next);
-      SIMPLEQ_FOREACH(tmp, &(loop->waiting_thread), next){
-	// printf("thread n°%d\n", tmp->id);
-      }
       previous_thread=current_thread;
       current_thread=SIMPLEQ_FIRST(&runq);
       SIMPLEQ_REMOVE_HEAD(&runq, next);
-      //      printf("j'étais %d, je lance %d\n", previous_thread->id, thread_self());
-      //printf("test %p %p \n",previous_thread->context, current_thread->context);
       swapcontext(previous_thread->context, current_thread->context);
       current_thread=previous_thread;
-      //printf("Je suis revenu au contexte de %d\n", thread_self());
       if(retval!=NULL){
 	*retval = current_thread->retval;
       }
@@ -210,41 +185,16 @@ int thread_join(thread_t thread, void **retval){
   return 0;
 }
 
-/* simplement placer retval dans le retval du thread self */
-/* void thread_exit(void *retval){ */
-/*   if ( SIMPLEQ_EMPTY(head) ) free(current_thread); */
-/*   else{ */
-/*     SIMPLEQ_FIRST(head)->retval=retval; */
-/*     free(current_thread); */
-/*     current_thread=SIMPLEQ_FIRST(head); */
-/*     SIMPLEQ_REMOVE_HEAD(head, next); */
-/*   } */
-/* } */
-
 void thread_exit(void *retval){
   struct thread * loop;
   struct thread *tmp;
   /* On initialise un thread qui va prendre la valeur du thread courant et aller dans la file des threads non utilisés */
   struct thread* thread_over;
-  /* if ((thread_over = malloc (sizeof(struct thread))) == NULL){ */
-  /*   //    fprintf(stderr, "Error malloc\n"); */
-  /*   return; */
-  /* } */
-  // printf("exit : waiting thread de %d\n", thread_self());
-  SIMPLEQ_FOREACH(tmp, &(current_thread->waiting_thread), next){
-	// printf("thread n°%d\n", tmp->id);
-  }
-  // thread_over->context=malloc(sizeof(ucontext_t));
   thread_over=current_thread;
-
   /* On stocke retval dans le champ du thread qui a fini son exécution */
-  // printf("Le thread %d place %p dans son champ retval\n", thread_self(), retval);
   thread_over->retval=retval;
- 
-
   SIMPLEQ_FOREACH(loop, &current_thread->waiting_thread, next){
     loop->retval = retval;
-    SIMPLEQ_REMOVE(&sleepq, loop, thread, next);
     SIMPLEQ_INSERT_TAIL(&runq,loop,next);
   }
 
@@ -252,11 +202,7 @@ void thread_exit(void *retval){
      SIMPLEQ_INSERT_TAIL(&overq, thread_over, next);
     /* Le thread courant devient la tête de la file */
     current_thread=SIMPLEQ_FIRST(&runq);
-    /* On stocke la tête dans un pointeur */
-    //	  struct thread* tmp=SIMPLEQ_FIRST(&runq);
-	  
     SIMPLEQ_REMOVE_HEAD(&runq, next);
-    // printf("le nouveau thread %d\n", thread_self());
     /* Enfin on reprend le contexte du nouveau thread courant */
     setcontext(current_thread->context);
   }
@@ -305,7 +251,6 @@ int thread_mutex_lock(thread_mutex_t *mutex){
   struct thread* loop;
   if (mutex->locker==-1){
     mutex->locker=thread_self();
-    //printf("Je suis %d j'ai pris le lock\n", thread_self());
     return EXIT_SUCCESS;
   }
   else if (mutex->locker==thread_self()){
@@ -315,14 +260,9 @@ int thread_mutex_lock(thread_mutex_t *mutex){
   else {
     SIMPLEQ_INSERT_TAIL(&(mutex->mutexq), current_thread, next);
     do {
-      //printf("Je suis %d, je suis en attente, voici la waiting\n", thread_self());
-      /* SIMPLEQ_FOREACH(loop, &(mutex->mutexq),next){ */
-      /* 	printf("id : %d \n", loop->id); */
-      /* }*/
       previous_thread=current_thread;
       current_thread=SIMPLEQ_FIRST(&runq);
       SIMPLEQ_REMOVE_HEAD(&runq, next);
-      //printf("Je suis dans la boucle du lock de %d et je lance %d\n", previous_thread->id, thread_self());
       swapcontext(previous_thread->context, current_thread->context);
       current_thread=previous_thread;
     } while(mutex->locker!=thread_self() && mutex->locker!=-1);
@@ -338,7 +278,6 @@ int thread_mutex_unlock(thread_mutex_t *mutex){
     return EXIT_FAILURE;
   }
   else {
-    //   printf("Je suis %d, je libère le mutex\n", thread_self());
     if (!SIMPLEQ_EMPTY(&(mutex->mutexq))){
       tmp=SIMPLEQ_FIRST(&(mutex->mutexq));
       SIMPLEQ_REMOVE_HEAD(&(mutex->mutexq),next);
