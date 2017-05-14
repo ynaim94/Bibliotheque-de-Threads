@@ -112,7 +112,6 @@ int create_main_thread(){
   /*aider valgrind à repérer les mallocs*/
   current_thread->valgrind_stackid = VALGRIND_STACK_REGISTER((current_thread->context)->uc_stack.ss_sp, (current_thread->context)->uc_stack.ss_sp + (current_thread->context)->uc_stack.ss_size);
   /*libérer toute la mémoire allouée à la fin du programme*/
-  //  on_exit((void(*)(void)) free_memory, NULL);
  on_exit((void (*)(int,  void *)) free_memory, NULL);
   return 0;
 }
