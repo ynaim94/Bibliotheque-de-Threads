@@ -112,8 +112,9 @@ int create_main_thread(){
   /*aider valgrind à repérer les mallocs*/
   current_thread->valgrind_stackid = VALGRIND_STACK_REGISTER((current_thread->context)->uc_stack.ss_sp, (current_thread->context)->uc_stack.ss_sp + (current_thread->context)->uc_stack.ss_size);
   /*libérer toute la mémoire allouée à la fin du programme*/
-  on_exit((void(*)(void)) free_memory, NULL);
-  
+  //  on_exit((void(*)(void)) free_memory, NULL);
+ on_exit((void (*)(int,  void *)) free_memory, NULL);
+  return 0;
 }
 
 thread_t thread_self(void){
@@ -206,7 +207,6 @@ int thread_join(thread_t thread, void **retval){
   struct thread* loop;
   struct thread* loop_rest;
   struct thread *previous_thread;
-  struct thread *tmp;
 
   /*chercher le thread dans la file des threads terminés*/
   SIMPLEQ_FOREACH(loop_rest,&overq, next){
@@ -249,7 +249,6 @@ int thread_join(thread_t thread, void **retval){
 
 void thread_exit(void *retval){
   struct thread * loop;
-  struct thread *tmp;
   /*initialiser un thread qui va prendre la valeur du thread courant et aller dans la file des threads non utilisés */
   struct thread* thread_over;
   thread_over=current_thread;
@@ -288,7 +287,6 @@ int thread_mutex_destroy(thread_mutex_t *mutex){
 
 int thread_mutex_lock(thread_mutex_t *mutex){
   struct thread* previous_thread;
-  struct thread* loop;
   if (mutex->locker==-1){
     mutex->locker=thread_self();
     return EXIT_SUCCESS;
