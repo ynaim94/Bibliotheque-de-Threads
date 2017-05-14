@@ -7,47 +7,60 @@ EXEC=01-main 51-fibonacci 02-switch 61-mutex 11-join 12-join-main 21-create-many
 
 EXEC-PTHREAD=$(addsuffix -pthread, $(EXEC))
 
-OBJ=$(addsuffix .o, $(EXEC) $(EXEC-PTHREAD))
+TEST=$(addprefix /test/, $(EXEC) $(EXEC-PTHREAD))
+
+OBJ=$(addsuffix .o, $(TEST))
 
 check: all
 
-all: preemption_exemple thread.o $(EXEC) $(EXEC-PTHREAD)
+all: $(EXEC) $(EXEC-PTHREAD) preemption_exemple
 
-example: example.o thread.o	
-	$(CC) -o $@ $^ $(LDFLAGS)
-01-main: 01-main.o thread.o
-	$(CC) -o $@ $^ $(LDFLAGS)
-02-switch: 02-switch.o thread.o
-	$(CC) -o $@ $^ $(LDFLAGS)
-11-join: 11-join.o thread.o
-	$(CC) -o $@ $^ $(LDFLAGS)
-12-join-main: 12-join-main.o thread.o
-	$(CC) -o $@ $^ $(LDFLAGS)
-21-create-many: 21-create-many.o thread.o
-	$(CC) -o $@ $^ $(LDFLAGS)
-22-create-many-recursive: 22-create-many-recursive.o thread.o
-	$(CC) -o $@ $^ $(LDFLAGS)
-23-create-many-once: 23-create-many-once.o thread.o
-	$(CC) -o $@ $^ $(LDFLAGS)
-31-switch-many: 31-switch-many.o thread.o
-	$(CC) -o $@ $^ $(LDFLAGS)
-32-switch-many-join: 32-switch-many-join.o thread.o
-	$(CC) -o $@ $^ $(LDFLAGS)
-51-fibonacci: 51-fibonacci.o thread.o
-	$(CC) -o $@ $^ $(LDFLAGS)
-61-mutex: 61-mutex.o thread.o
-	$(CC) -o $@ $^ $(LDFLAGS)
-preemption_exemple: preemption_exemple.o thread_preemption_pseudo.o
-	$(CC) -o $@ $^ $(LDFLAGS)
+01-main: test/01-main.c src/thread.c
+	$(CC) -o build/$@ $^ $(LDFLAGS)
 
-%-pthread: %.c
-	$(CC) $^ -o $@ $(CFLAGS) $(LDFLAGS) $(THREAD)
+02-switch: test/02-switch.c src/thread.c
+	$(CC) -o build/$@ $^ $(LDFLAGS)
+
+11-join: test/11-join.c src/thread.c
+	$(CC) -o build/$@ $^ $(LDFLAGS)
+
+12-join-main: test/12-join-main.c src/thread.c
+	$(CC) -o build/$@ $^ $(LDFLAGS)
+
+21-create-many: test/21-create-many.c src/thread.c
+	$(CC) -o build/$@ $^ $(LDFLAGS)
+
+22-create-many-recursive: test/22-create-many-recursive.c src/thread.c
+	$(CC) -o build/$@ $^ $(LDFLAGS)
+
+23-create-many-once: test/23-create-many-once.c src/thread.c
+	$(CC) -o build/$@ $^ $(LDFLAGS)
+
+31-switch-many: test/31-switch-many.c src/thread.c
+	$(CC) -o build/$@ $^ $(LDFLAGS)
+
+32-switch-many-join: test/32-switch-many-join.c src/thread.c
+	$(CC) -o build/$@ $^ $(LDFLAGS)
+
+51-fibonacci: test/51-fibonacci.c src/thread.c
+	$(CC) -o build/$@ $^ $(LDFLAGS)
+
+61-mutex: test/61-mutex.c src/thread.c
+	$(CC) -o build/$@ $^ $(LDFLAGS)
+
+
+preemption_exemple: test/preemption_exemple.c src/thread_preemption_pseudo.c
+	$(CC) -o build/$@ $^ $(LDFLAGS)
+
+
+%-pthread: test/%.c
+	$(CC) $^ -o build/$@ $(CFLAGS) $(LDFLAGS) $(THREAD)
 
 %.o: %.c
 	$(CC) -o $@ -c $< $(CFLAGS) $(LDFLAGS)
 
 clean:
-	$(RM) $(EXEC) *-pthread *.o *~ *#
+	$(RM) build/*
 
 .PHONY: clean all
 
