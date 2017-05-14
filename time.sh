@@ -9,17 +9,20 @@ then
     exit;
 fi
 
-if [ -f time.txt ]
+if [ -f time-$1.txt ]
 then
-    rm time.txt
+    rm time-$1.txt
 fi
 
 for i in `seq 1 $2`
 do
-
-    ./$1 $i > tmp.txt
-    TIME=`cat tmp.txt | grep time | awk '{print $3}'`
-    echo "$i $TIME" >> time.txt
+	
+	taskset -c 1 ./$1 $i $i*2 > tmp.txt
+	TIME=`cat tmp.txt | grep time | awk '{print $3}'`
+	taskset -c 1 ./$1-pthread $i $i*2 > tmp.txt
+		TIME2=`cat tmp.txt | grep time | awk '{print $3}'`
+		echo "$i $TIME $TIME2" >> time-$1.txt
 done
+
 
 #gnuplot graph.conf

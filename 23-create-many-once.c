@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <sys/time.h>
+
 #include "thread.h"
 
 /* test de plein de create, puis plein de join quand ils ont tous fini
@@ -22,11 +24,17 @@ static void * thfunc(void *dummy __attribute__((unused)))
 
 int main(int argc, char *argv[])
 {
+
+	struct timeval tv1;
+	struct timeval tv2;
+
+	gettimeofday(&tv1,NULL);
   thread_t *th;
   int err, i, nb;
 
   if (argc < 2) {
     printf("argument manquant: nombre de threads\n");
+	gettimeofday(&tv2,NULL);
     return -1;
   }
 
@@ -57,6 +65,9 @@ int main(int argc, char *argv[])
 
   free(th);
 
+  gettimeofday(&tv2,NULL);
+  double time = (tv2.tv_sec - tv1.tv_sec) + (tv2.tv_usec - tv1.tv_usec)/1000000.0;
+  printf("time : %f\n",time);
   printf("%d threads créés et détruits\n", nb);
   return 0;
 }
