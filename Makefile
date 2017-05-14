@@ -13,7 +13,7 @@ OBJ=$(addsuffix .o, $(TEST))
 
 check: all
 
-all: $(EXEC) $(EXEC-PTHREAD) preemption_exemple
+all: $(EXEC) $(EXEC-PTHREAD) thread_preemption_exemple pseudo_preemption_exemple
 
 01-main: test/01-main.c src/thread.c
 	$(CC) -o build/$@ $^ $(LDFLAGS)
@@ -49,9 +49,11 @@ all: $(EXEC) $(EXEC-PTHREAD) preemption_exemple
 	$(CC) -o build/$@ $^ $(LDFLAGS)
 
 
-preemption_exemple: test/preemption_exemple.c src/thread_preemption_pseudo.c
+thread_preemption_exemple: test/preemption_exemple.c src/thread.c
 	$(CC) -o build/$@ $^ $(LDFLAGS)
 
+pseudo_preemption_exemple: test/preemption_exemple.c src/thread_preemption_pseudo.c
+	$(CC) -o build/$@ $^ $(LDFLAGS)
 
 %-pthread: test/%.c
 	$(CC) $^ -o build/$@ $(CFLAGS) $(LDFLAGS) $(THREAD)
