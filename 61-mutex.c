@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <sys/time.h>
 #include "thread.h"
 
 /* test de faire une somme avec plein de thread sur un compteur partagé
@@ -48,6 +49,10 @@ static void * thfunc(void *dummy __attribute__((unused)))
 
 int main(int argc, char *argv[])
 {
+	struct timeval tv1;
+	struct timeval tv2;
+	gettimeofday(&tv1,NULL);
+
   thread_t *th;
   int err, i, nb;
 
@@ -97,5 +102,10 @@ int main(int argc, char *argv[])
   else {
       printf("Le résultat est INCORRECT: %d * 1000 != %d\n", nb, counter);
   }
+
+  gettimeofday(&tv2,NULL);
+  
+  double time = (tv2.tv_sec - tv1.tv_sec) + (tv2.tv_usec - tv1.tv_usec)/1000000.0;
+  printf("time : %f\n",time);
   return 0;
 }

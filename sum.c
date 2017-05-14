@@ -2,12 +2,13 @@
 #include <sys/time.h>
 #include "thread.h"
 
-int a[SIZE];
+thread_t thread_x[NB];
 int shared_index = 0;
 int total_sum = 0;
 thread_mutex_t mutex1;
+int len = 0; 
 
-void *sum(void *ignored)//changer le nom du paramètre
+void *sum(int *a)//changer le nom du paramètre
 {
  int index, sum = 0;
  do {
@@ -16,11 +17,11 @@ void *sum(void *ignored)//changer le nom du paramètre
     shared_index++;
     thread_mutex_unlock(&mutex1);
 
-    if (index < SIZE)
+    if (index < len)
         sum += *(a + index);
 }
 while
- (index < SIZE);
+ (index < len);
 
 thread_mutex_lock(&mutex1);
 total_sum += sum;
@@ -38,19 +39,19 @@ main(int argc, char *argv[])
 		printf("argument manquant: entier x pour la taille du tableau et  pour le nombre de threads\n");
 		return -1;
   }
-	 int len = SIZE;
-	 int nb = atoi(argv[1]);
-
+	 int len = atoi(argv[1]);
+	 int nb = NB;
+	 int a[len];
   int i;
-  thread_t thread_x[nb];
+  
   void *res = NULL;
-  pthread_mutex_init(&mutex1, NULL);
+  thread_mutex_init(&mutex1);
 
   for (i = 0; i < len; i++)
     a[i] = i+1;
   
   for (i = 0; i < nb ; i++){
-	  thread_create(&thread_x[i],sum,NULL);
+	  thread_create(&thread_x[i],sum,a);
   
 /*
   for (i = 0; i < nb; i++){
@@ -60,7 +61,7 @@ main(int argc, char *argv[])
   }
   gettimeofday(&tv2,NULL);
 
-  printf("The sum of 1 to %d is %d\n", SIZE, total_sum);
+  printf("The sum of 1 to %d is %d\n", len, total_sum);
 
   double time = (tv2.tv_sec - tv1.tv_sec) + (tv2.tv_usec - tv1.tv_usec)/1000000.0;
   printf("time : %f\n",time);

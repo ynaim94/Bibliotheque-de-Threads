@@ -31,7 +31,6 @@ int main(int argc, char *argv[])
   unsigned long nbyield;
   thread_t *ths;
   struct timeval tv1, tv2;
-  unsigned long us;
 
   if (argc < 3) {
     printf("arguments manquants: nombre de threads, puis nombre de yield\n");
@@ -62,9 +61,10 @@ int main(int argc, char *argv[])
   }
 
   gettimeofday(&tv2, NULL);
-  us = (tv2.tv_sec-tv1.tv_sec)*1000000+(tv2.tv_usec-tv1.tv_usec);
+  double time = (tv2.tv_sec - tv1.tv_sec) + (tv2.tv_usec - tv1.tv_usec)/1000000.0;
+  printf("time : %f\n",time);
   printf("%ld yield avec %d threads: %ld us\n",
-	 nbyield, nbth, us);
+	 nbyield, nbth, time);
 
   free(ths);
 
