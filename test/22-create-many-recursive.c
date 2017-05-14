@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
+#include<sys/time.h>
 #include "../src/thread.h"
 
 /* test de plein de create-destroy récursif.

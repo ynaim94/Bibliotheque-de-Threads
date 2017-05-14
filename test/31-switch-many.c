@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
   gettimeofday(&tv2, NULL);
   double time = (tv2.tv_sec - tv1.tv_sec) + (tv2.tv_usec - tv1.tv_usec)/1000000.0;
   printf("time : %f\n",time);
-  printf("%ld yield avec %d threads: %ld us\n",
+  printf("%ld yield avec %d threads: %f us\n",
 	 nbyield, nbth, time);
 
   free(ths);
