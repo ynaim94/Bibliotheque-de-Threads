@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <sys/time.h>
-#include "thread.h"
+#include "../src/thread.h"
 
 /* fibonacci.
  *

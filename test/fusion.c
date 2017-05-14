@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 
-#include "thread.h"
+#include "../src/thread.h"
 
 int a[SIZE], swapped = 0;
 

@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <sys/time.h>
-#include "thread.h"
+#include "../src/thread.h"
 
 thread_t thread_x[NB];
 int shared_index = 0;

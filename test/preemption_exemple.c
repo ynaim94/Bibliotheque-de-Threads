@@ -4,7 +4,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#include "thread.h"
+#include "../src/thread.h"
 
 #define MAX 100 000
 

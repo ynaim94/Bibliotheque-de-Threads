@@ -1,13 +1,8 @@
-#include "thread.h"
-#include "queue.h"
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
 
-
-#include "thread.h"
-#include <stdio.h>
-#include <assert.h>
+#include "../src/thread.h"
 
 static void * threadfunc(void * arg)
 {
