@@ -34,13 +34,10 @@ static void * thfunc(void *dummy __attribute__((unused)))
 	/* Verrouille la section critique accédant a counter */
 	thread_mutex_lock(&lock);	
 	tmp = counter;
-	printf("avant premier yield %d\n", tmp);
 	thread_yield();
-	tmp++;
-	printf("avant deuxième yield %d\n", tmp);
+	tmp++;;
 	thread_yield();
 	counter = tmp;
-	printf("avant mutex unlock %d\n", tmp); 
 	thread_mutex_unlock(&lock);
     }
 
@@ -79,20 +76,15 @@ int main(int argc, char *argv[])
     err = thread_create(&th[i], thfunc, NULL);
     assert(!err);
   }
-  printf("Threads créés\n");
   /* on leur passe la main, ils vont tous terminer */
   for(i=0; i<nb; i++) {
-    printf("nb : %d\n", i);
     thread_yield();
   }
-  printf("Threads terminés\n");
   /* on les joine tous, maintenant qu'ils sont tous morts */
   for(i=0; i<nb; i++) {
-    printf("test1\n");
     err = thread_join(th[i], NULL);
     assert(!err);
   }
-  printf("avant free\n");
   free(th);
   thread_mutex_destroy(&lock);
 
